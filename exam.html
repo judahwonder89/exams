@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JUDAH WONDERS · CBT Portal</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Nunito', sans-serif; background: linear-gradient(135deg, #fef9e7 0%, #ede9fe 100%); min-height: 100vh; padding: 20px; display: flex; justify-content: center; align-items: center; }
+        #app { max-width: 800px; width: 100%; background: rgba(255,255,255,0.88); backdrop-filter: blur(10px); border-radius: 48px; padding: 35px; box-shadow: 0 20px 60px rgba(184,134,11,0.12); border: 2px solid rgba(255,215,0,0.25); }
+        .page { display: none; animation: fadeUp 0.4s ease; }
+        .page.active { display: block; }
+        @keyframes fadeUp { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+
+        /* ===== SCHOOL HEADER ===== */
+        .school-header { text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 3px dashed #fde68a; }
+        .school-header h1 { font-size: 28px; font-weight: 800; color: #1e1b4b; background: linear-gradient(to right, #b8860b, #8a2be2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .school-header .motto { font-weight: 600; color: #475569; background: #fef9e7; display: inline-block; padding: 4px 24px; border-radius: 30px; margin-top: 4px; border: 1px solid #fde68a; }
+        .school-header .location { font-size: 13px; color: #64748b; margin-top: 4px; }
+
+        /* ===== CARDS & INPUTS ===== */
+        .card { background: #ffffff; padding: 25px; border-radius: 32px; box-shadow: 0 8px 25px rgba(0,0,0,0.04); border: 1px solid #f1f5f9; margin-top: 15px; }
+        .flex { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+        input, select { flex: 1; min-width: 160px; padding: 16px 20px; border: 2px solid #e2e8f0; border-radius: 60px; font-family: 'Nunito', sans-serif; font-size: 16px; background: #f8fafc; outline: none; transition: 0.2s; }
+        input:focus, select:focus { border-color: #b8860b; background: white; box-shadow: 0 0 0 4px rgba(184,134,11,0.12); }
+        button { font-family: 'Nunito', sans-serif; font-weight: 800; padding: 16px 32px; border: none; border-radius: 60px; font-size: 16px; cursor: pointer; transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 8px; background: #e2e8f0; color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        button:hover { transform: scale(1.02); box-shadow: 0 10px 20px -5px rgba(0,0,0,0.1); }
+        button:active { transform: scale(0.97); }
+        .btn-primary { background: linear-gradient(to right, #b8860b, #8a2be2); color: white; }
+        .btn-success { background: linear-gradient(to right, #059669, #10b981); color: white; }
+        .btn-danger { background: linear-gradient(to right, #dc2626, #ef4444); color: white; }
+        .btn-outline { background: white; border: 2px solid #e2e8f0; }
+
+        /* ===== EXAM GRID ===== */
+        .exam-grid { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 15px 0; }
+        .exam-grid button { flex: 1 0 calc(50% - 12px); justify-content: center; background: #fef9e7; font-size: 18px; padding: 20px; border-radius: 20px; border: 2px solid #fde68a; transition: 0.2s; }
+        .exam-grid button:hover { border-color: #b8860b; background: #fef3c7; transform: scale(1.02); }
+
+        /* ===== CBT QUESTION ===== */
+        .question-number { background: #b8860b; color: white; padding: 6px 16px; border-radius: 60px; font-weight: 700; font-size: 14px; display: inline-block; margin-bottom: 12px; }
+        .question-text { font-size: 20px; font-weight: 700; color: #0f172a; margin: 15px 0 20px 0; line-height: 1.5; }
+        .options-grid { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; }
+        .options-grid label { display: flex; align-items: center; gap: 15px; background: #f8fafc; padding: 14px 20px; border-radius: 60px; border: 2px solid transparent; cursor: pointer; font-weight: 600; transition: 0.15s; }
+        .options-grid label:hover { background: #fef9e7; border-color: #fde68a; }
+        .options-grid input[type="radio"] { width: 20px; height: 20px; accent-color: #b8860b; flex: 0 0 auto; }
+
+        /* ===== TIMER ===== */
+        .timer-box { background: #1e1b4b; color: white; padding: 12px 24px; border-radius: 60px; font-weight: 800; font-size: 22px; letter-spacing: 2px; display: inline-flex; align-items: center; gap: 12px; }
+        .timer-box.warning { background: #dc2626; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+        /* ===== UTILITY ===== */
+        .error-text { color: #dc2626; font-weight: 700; margin-top: 12px; }
+        .success-text { color: #059669; font-weight: 700; margin-top: 12px; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .status-text { font-size: 13px; color: #64748b; margin-top: 8px; }
+
+        @media (max-width: 600px) { #app { padding: 20px; border-radius: 28px; } .school-header h1 { font-size: 22px; } .question-text { font-size: 17px; } .exam-grid button { flex: 1 0 100%; } }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- ===== SCHOOL HEADER ===== -->
+    <div class="school-header">
+        <h1>🏫 JUDAH WONDERS MODEL SCHOOL</h1>
+        <div class="motto">✝️ Technology &amp; Academy with a Difference</div>
+        <div class="location">📍 Abiola Way, ABEOKUTA, Ogun State.</div>
+    </div>
+
+    <!-- ===== LOGIN PAGE ===== -->
+    <div id="loginPage" class="page active">
+        <div class="card">
+            <h2 style="color:#1e1b4b; margin-bottom:8px;">🎓 Student Exam Portal</h2>
+            <p style="color:#64748b; margin-bottom:20px;">Enter your name and select your class.</p>
+            <div class="flex">
+                <input id="studentName" placeholder="👤 Your Full Name" style="flex:2;" />
+                <select id="studentClassSelect" style="flex:2;">
+                    <option value="">-- Select Your Class --</option>
+                </select>
+                <button id="enterExamBtn" class="btn-primary" style="flex:1; min-width:140px; justify-content:center;">
+                    🚀 Start Exam
+                </button>
+            </div>
+            <p id="loginErr" class="error-text"></p>
+            <p id="authStatus" class="status-text">⏳ Connecting to server...</p>
+        </div>
+    </div>
+
+    <!-- ===== EXAM PAGE ===== -->
+    <div id="examPage" class="page">
+        <div class="flex-between">
+            <div>
+                <h3 style="color:#1e1b4b;">👋 <span id="sName"></span></h3>
+                <p style="color:#64748b; margin-top:-4px;">Class: <strong id="sClass"></strong></p>
+            </div>
+            <button id="logoutExam" class="btn-danger" style="padding:10px 24px;">🚪 Logout</button>
+        </div>
+        <hr style="margin:20px 0; border:1px dashed #e2e8f0;" />
+        <div id="availableExams"><p style="color:#64748b;">📡 Loading available subjects...</p></div>
+        <div id="cbtArea" style="display:none; margin-top:20px;">
+            <div class="flex-between" style="margin-bottom:20px;">
+                <div class="timer-box" id="timerDisplay">⏱️ 15:00</div>
+                <button id="submitExamBtn" class="btn-success">✅ Submit Exam</button>
+            </div>
+            <div class="card">
+                <div id="questionContainer"></div>
+                <div class="flex" style="justify-content:center; margin-top:20px;">
+                    <button id="prevQBtn" class="btn-outline">⬅ Previous</button>
+                    <button id="nextQBtn" class="btn-primary">Next ➡</button>
+                </div>
+            </div>
+        </div>
+        <div id="resultDisplay" style="margin-top:20px;"></div>
+    </div>
+</div>
+
+<script>
+    // =============================================================
+    // 🔥 FIREBASE CONFIG — JUDAH WONDERS
+    // =============================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyAqayttjbGIy2WDsL_x6guPLVnfiNUKmyc",
+        authDomain: "judahexam.firebaseapp.com",
+        projectId: "judahexam",
+        storageBucket: "judahexam.firebasestorage.app",
+        messagingSenderId: "451288402445",
+        appId: "1:451288402445:web:d113278acec9dc52c26344",
+        measurementId: "G-GG4E5P8K7Z"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // =============================================================
+    // GLOBAL STATE
+    // =============================================================
+    let currentStudent = { name: '', class: '' };
+    let currentQuestions = [];
+    let currentSubject = '';
+    let answers = {};
+    let qIndex = 0;
+    let timerInterval = null;
+    let timeSeconds = 900; // 15 minutes
+    const TOTAL_TIME = 900;
+    let masterClassList = [];
+
+    const $ = (id) => document.getElementById(id);
+    const showPage = (id) => {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        $(id + 'Page').classList.add('active');
+    };
+
+    // =============================================================
+    // 1. AUTHENTICATION (Wait for it!)
+    // =============================================================
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            $('authStatus').innerHTML = '✅ Connected to server.';
+            console.log('✅ Student authenticated.');
+        } else {
+            $('authStatus').innerHTML = '⏳ Authenticating...';
+            auth.signInAnonymously().catch(e => {
+                $('authStatus').innerHTML = '❌ Connection error. Please refresh.';
+                console.error('Auth error:', e);
+            });
+        }
+    });
+
+    function waitForAuth() {
+        return new Promise((resolve) => {
+            if (auth.currentUser) {
+                resolve(auth.currentUser);
+                return;
+            }
+            const unsubscribe = auth.onAuthStateChanged(user => {
+                unsubscribe();
+                resolve(user);
+            });
+        });
+    }
+
+    // =============================================================
+    // 2. LOAD MASTER CLASS LIST & POPULATE DROPDOWN
+    // =============================================================
+    async function loadMasterClassList() {
+        try {
+            const doc = await db.collection('classList').doc('allClasses').get();
+            if (doc.exists) {
+                masterClassList = doc.data().classes || [];
+            } else {
+                // Fallback defaults
+                masterClassList = ['Nursery 1', 'Nursery 2', 'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5', 'Basic 6'];
+            }
+            populateClassDropdown();
+        } catch (e) {
+            console.error("Error loading master class list:", e);
+            masterClassList = ['Nursery 1', 'Nursery 2', 'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5', 'Basic 6'];
+            populateClassDropdown();
+        }
+    }
+
+    function populateClassDropdown() {
+        const select = $('studentClassSelect');
+        select.innerHTML = '<option value="">-- Select Your Class --</option>';
+        masterClassList.forEach(cls => {
+            select.innerHTML += `<option value="${cls}">${cls}</option>`;
+        });
+        $('authStatus').innerHTML = '✅ Ready. Select your class and start.';
+    }
+
+    // =============================================================
+    // 3. LOGIN LOGIC (Waits for Auth, uses Dropdown)
+    // =============================================================
+    $('enterExamBtn').addEventListener('click', async () => {
+        const name = $('studentName').value.trim();
+        const cls = $('studentClassSelect').value;
+        const err = $('loginErr');
+
+        if (!name) {
+            err.innerText = '⚠️ Please enter your full name.';
+            return;
+        }
+        if (!cls) {
+            err.innerText = '⚠️ Please select your class.';
+            return;
+        }
+        err.innerText = '';
+
+        // 1. Ensure we are authenticated BEFORE loading anything
+        const user = await waitForAuth();
+        if (!user) {
+            err.innerText = '⚠️ Network error. Please refresh the page.';
+            return;
+        }
+
+        // 2. Auth is ready. Proceed with login.
+        currentStudent = { name, class: cls };
+        $('sName').innerText = name;
+        $('sClass').innerText = cls;
+        showPage('exam');
+        await loadAvailableExams(cls);
+    });
+
+    $('logoutExam').addEventListener('click', () => {
+        clearInterval(timerInterval);
+        showPage('login');
+        currentStudent = {};
+        $('cbtArea').style.display = 'none';
+        $('resultDisplay').innerHTML = '';
+        $('studentClassSelect').value = '';
+        $('studentName').value = '';
+    });
+
+    // =============================================================
+    // 4. LOAD AVAILABLE EXAMS
+    // =============================================================
+    async function loadAvailableExams(cls) {
+        const container = $('availableExams');
+        container.innerHTML = '<p style="color:#64748b;">📡 Loading available subjects...</p>';
+        try {
+            const status = await db.collection('examStatus').doc(cls).get();
+            if (!status.exists || !status.data().activeSubjects || status.data().activeSubjects.length === 0) {
+                container.innerHTML = `
+                    <div class="card" style="text-align:center; background:#fef9e7;">
+                        <h3>😴 No Active Exams</h3>
+                        <p>Please check back later or ask your teacher.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const subjects = status.data().activeSubjects;
+            container.innerHTML = `
+                <p style="font-weight:600; color:#1e1b4b; margin-bottom:10px;">📖 Select a subject to start:</p>
+                <div class="exam-grid">
+                    ${subjects.map(sub => `
+                        <button class="start-exam-btn" data-sub="${sub}">
+                            📝 ${sub}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+
+            document.querySelectorAll('.start-exam-btn').forEach(btn => {
+                btn.addEventListener('click', () => startCBT(cls, btn.dataset.sub));
+            });
+
+        } catch (e) {
+            container.innerHTML = `<p class="error-text">⚠️ Error loading exams. Please refresh.</p>`;
+            console.error("loadAvailableExams error:", e);
+        }
+    }
+
+    // =============================================================
+    // 5. START CBT (Fetch Questions + Timer)
+    // =============================================================
+    async function startCBT(cls, subject) {
+        clearInterval(timerInterval);
+        timeSeconds = TOTAL_TIME;
+        qIndex = 0;
+        answers = {};
+        currentSubject = subject;
+
+        const container = $('questionContainer');
+        container.innerHTML = '<p style="color:#64748b;">⏳ Loading your questions...</p>';
+        $('cbtArea').style.display = 'block';
+        $('resultDisplay').innerHTML = '';
+        $('timerDisplay').innerText = '⏱️ 15:00';
+        $('timerDisplay').classList.remove('warning');
+
+        try {
+            const snap = await db.collection('questions')
+                .where('class', '==', cls)
+                .where('subject', '==', subject)
+                .get();
+
+            if (snap.empty) {
+                container.innerHTML = `<p class="error-text">❌ No questions found for ${subject}. Tell your teacher!</p>`;
+                return;
+            }
+
+            currentQuestions = [];
+            snap.forEach(doc => currentQuestions.push({ id: doc.id, ...doc.data() }));
+
+            startTimer();
+            renderQuestion(0);
+
+        } catch (e) {
+            container.innerHTML = `<p class="error-text">❌ Failed to load questions. Check your internet.</p>`;
+            console.error("startCBT error:", e);
+        }
+    }
+
+    // =============================================================
+    // 6. RENDER QUESTION
+    // =============================================================
+    function renderQuestion(index) {
+        const container = $('questionContainer');
+        if (index >= currentQuestions.length || index < 0) return;
+
+        const q = currentQuestions[index];
+        const total = currentQuestions.length;
+
+        let optionsHtml = '';
+        const letters = ['A', 'B', 'C', 'D'];
+        q.options.forEach((opt, i) => {
+            const letter = letters[i];
+            const checked = answers[q.id] === letter ? 'checked' : '';
+            optionsHtml += `
+                <label>
+                    <input type="radio" name="cbt_${q.id}" value="${letter}" ${checked} 
+                           onchange="answers['${q.id}']='${letter}'" />
+                    <span style="font-size:18px;">${letter}. ${opt}</span>
+                </label>
+            `;
+        });
+
+        container.innerHTML = `
+            <div>
+                <span class="question-number">📌 Question ${index + 1} of ${total}</span>
+                <div class="question-text">${q.question}</div>
+                <div class="options-grid">${optionsHtml}</div>
+            </div>
+        `;
+
+        $('prevQBtn').style.visibility = index === 0 ? 'hidden' : 'visible';
+        $('nextQBtn').innerText = index === total - 1 ? '📌 Finish Review' : 'Next ➡';
+    }
+
+    $('prevQBtn').addEventListener('click', () => {
+        if (qIndex > 0) renderQuestion(--qIndex);
+    });
+
+    $('nextQBtn').addEventListener('click', () => {
+        if (qIndex < currentQuestions.length - 1) {
+            renderQuestion(++qIndex);
+        } else {
+            if (confirm('📌 You are at the end. Submit your exam now?')) {
+                submitExam();
+            }
+        }
+    });
+
+    // =============================================================
+    // 7. TIMER
+    // =============================================================
+    function startTimer() {
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timeSeconds--;
+            const mins = Math.floor(timeSeconds / 60);
+            const secs = timeSeconds % 60;
+            $('timerDisplay').innerText = `⏱️ ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+
+            if (timeSeconds <= 60) $('timerDisplay').classList.add('warning');
+            if (timeSeconds <= 0) {
+                clearInterval(timerInterval);
+                alert('⏰ Time is up! Your exam will be submitted automatically.');
+                submitExam();
+            }
+        }, 1000);
+    }
+
+    // =============================================================
+    // 8. SUBMIT EXAM
+    // =============================================================
+    async function submitExam() {
+        clearInterval(timerInterval);
+        if (!currentQuestions.length) return;
+
+        const totalQ = currentQuestions.length;
+        const answered = Object.keys(answers).length;
+        if (answered < totalQ) {
+            if (!confirm(`⚠️ You only answered ${answered} out of ${totalQ} questions. Submit anyway?`)) {
+                startTimer();
+                return;
+            }
+        }
+
+        let score = 0;
+        currentQuestions.forEach(q => {
+            if (answers[q.id] === q.correct) score++;
+        });
+
+        try {
+            await db.collection('results').add({
+                studentName: currentStudent.name,
+                class: currentStudent.class,
+                subject: currentSubject,
+                score: score,
+                totalQuestions: totalQ,
+                answers: answers,
+                submittedAt: new Date()
+            });
+
+            $('cbtArea').style.display = 'none';
+            $('resultDisplay').innerHTML = `
+                <div class="card" style="background:#dcfce7; border:2px solid #10b981; text-align:center;">
+                    <h2 style="color:#065f46;">🎉 Exam Submitted!</h2>
+                    <p style="font-size:22px; font-weight:800; color:#0f172a;">${currentSubject}</p>
+                    <p style="font-size:28px; font-weight:800; color:#b8860b;">${score} / ${totalQ}</p>
+                    <p style="color:#475569;">Your score has been recorded.</p>
+                </div>
+            `;
+            await loadAvailableExams(currentStudent.class);
+
+        } catch (e) {
+            alert('❌ Failed to submit. Check your internet connection.');
+            console.error(e);
+        }
+    }
+
+    $('submitExamBtn').addEventListener('click', () => {
+        if (confirm('📝 Are you sure you want to submit your exam?')) {
+            submitExam();
+        }
+    });
+
+    // =============================================================
+    // 9. INIT
+    // =============================================================
+    showPage('login');
+    loadMasterClassList();
+    console.log('✅ JUDAH WONDERS MODEL SCHOOL — CBT Portal is ready!');
+</script>
+</body>
+</html>
