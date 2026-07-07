@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JUDAH WONDERS · Teacher Dashboard</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Papa Parse -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f1f5f9; height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        #app { width: 100%; max-width: 1400px; height: 90vh; background: white; border-radius: 32px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        .page { display: none; height: 100%; width: 100%; animation: fadeIn 0.3s ease; }
+        .page.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+        /* ===== LOGIN ===== */
+        #loginPage { align-items: center; justify-content: center; background: linear-gradient(135deg, #fef9e7, #ede9fe); }
+        .login-box { background: white; padding: 50px 40px; border-radius: 40px; max-width: 420px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.08); border: 1px solid rgba(255,215,0,0.3); }
+        .login-box h2 { font-size: 28px; color: #1e1b4b; margin-bottom: 6px; }
+        .login-box h2 span { color: #b8860b; }
+        .login-box p { color: #64748b; margin-bottom: 25px; }
+        .login-box input, .login-box select { width: 100%; padding: 16px 20px; border: 2px solid #e2e8f0; border-radius: 60px; font-size: 15px; margin-bottom: 12px; background: #f8fafc; outline: none; transition: 0.2s; font-family: 'Inter', sans-serif; }
+        .login-box input:focus, .login-box select:focus { border-color: #b8860b; background: white; }
+        .login-box button { width: 100%; padding: 16px; background: linear-gradient(to right, #b8860b, #8a2be2); color: white; border: none; border-radius: 60px; font-size: 16px; font-weight: 800; cursor: pointer; transition: 0.2s; font-family: 'Inter', sans-serif; }
+        .login-box button:hover { transform: scale(1.02); box-shadow: 0 10px 25px rgba(184,134,11,0.3); }
+        .login-error { color: #dc2626; font-weight: 600; margin-top: 10px; font-size: 14px; }
+
+        /* ===== TOAST ===== */
+        .toast-container { position: fixed; top: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 12px; max-width: 400px; width: 100%; pointer-events: none; }
+        .toast { background: white; padding: 16px 24px; border-radius: 16px; box-shadow: 0 20px 40px -8px rgba(0,0,0,0.12); border-left: 6px solid #4f46e5; pointer-events: auto; animation: slideIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards; display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 14px; color: #0f172a; }
+        .toast.hide { animation: slideOut 0.3s ease forwards; }
+        .toast .icon { font-size: 22px; }
+        .toast.success { border-color: #10b981; }
+        .toast.error { border-color: #dc2626; }
+        .toast.warning { border-color: #f59e0b; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(60px); } }
+
+        /* ===== DASHBOARD LAYOUT ===== */
+        #dashboardPage { flex-direction: row; background: #f8fafc; }
+        .sidebar { width: 320px; min-width: 280px; background: white; border-right: 1px solid #e2e8f0; padding: 25px 20px; display: flex; flex-direction: column; overflow-y: auto; height: 100%; }
+        .sidebar .brand { font-weight: 900; font-size: 20px; color: #1e1b4b; margin-bottom: 5px; }
+        .sidebar .brand span { color: #b8860b; }
+        .sidebar .user-info { font-size: 14px; color: #64748b; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .sidebar .user-info .name { font-weight: 700; color: #0f172a; }
+        .sidebar .logout-btn { background: #fee2e2; color: #dc2626; border: none; padding: 6px 16px; border-radius: 60px; font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.2s; font-family: 'Inter', sans-serif; }
+        .sidebar .logout-btn:hover { background: #fecaca; }
+        .class-switcher { display: flex; gap: 8px; margin-bottom: 25px; }
+        .class-switcher select { flex: 1; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 60px; font-size: 14px; font-weight: 600; outline: none; background: #f8fafc; font-family: 'Inter', sans-serif; }
+        .class-switcher select:focus { border-color: #b8860b; }
+        .class-switcher button { padding: 12px 20px; background: #b8860b; color: white; border: none; border-radius: 60px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.2s; white-space: nowrap; }
+        .class-switcher button:hover { background: #9a7709; }
+        .sidebar-title { font-weight: 800; color: #1e293b; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .add-subject-row { display: flex; gap: 6px; margin-bottom: 15px; }
+        .add-subject-row input { flex: 1; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 60px; font-size: 13px; outline: none; font-family: 'Inter', sans-serif; }
+        .add-subject-row input:focus { border-color: #b8860b; }
+        .add-subject-row button { padding: 10px 16px; background: #10b981; color: white; border: none; border-radius: 60px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.2s; }
+        .add-subject-row button:hover { background: #059669; }
+        .subject-list { flex: 1; overflow-y: auto; margin-top: 5px; }
+        .subject-item { padding: 14px 18px; border-radius: 16px; margin-bottom: 6px; cursor: pointer; transition: 0.15s; font-weight: 600; color: #334155; display: flex; justify-content: space-between; align-items: center; border: 2px solid transparent; background: #f8fafc; }
+        .subject-item:hover { background: #eef2ff; border-color: #c7d2fe; }
+        .subject-item.active { background: #b8860b; color: white; border-color: #b8860b; }
+        .subject-item .del-sub { background: transparent; border: none; color: #94a3b8; font-weight: 800; cursor: pointer; font-size: 18px; padding: 0 5px; transition: 0.2s; }
+        .subject-item .del-sub:hover { color: #dc2626; transform: scale(1.2); }
+        .subject-item.active .del-sub { color: rgba(255,255,255,0.6); }
+        .subject-item.active .del-sub:hover { color: white; }
+
+        /* ===== MAIN PANEL ===== */
+        .main-panel { flex: 1; padding: 25px 30px; overflow-y: auto; height: 100%; background: #f8fafc; display: flex; flex-direction: column; }
+        .main-panel .panel-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }
+        .panel-header h2 { font-size: 24px; color: #0f172a; font-weight: 800; }
+        .panel-header h2 span { color: #b8860b; }
+        .panel-header .badge-points { background: #1e1b4b; color: white; padding: 6px 18px; border-radius: 60px; font-weight: 700; font-size: 14px; }
+
+        /* Tabs in Main Panel */
+        .main-tabs { display: flex; gap: 6px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .main-tab { padding: 10px 22px; border-radius: 60px; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.15s; border: 2px solid transparent; background: transparent; color: #64748b; font-family: 'Inter', sans-serif; }
+        .main-tab:hover { background: #f1f5f9; color: #0f172a; }
+        .main-tab.active { background: #b8860b; color: white; border-color: #b8860b; }
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+
+        /* Questions Grid */
+        .question-grid { display: flex; flex-direction: column; gap: 10px; }
+        .q-item { background: white; border-radius: 16px; padding: 14px 20px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; transition: 0.15s; }
+        .q-item:hover { border-color: #c7d2fe; }
+        .q-item .q-text { font-weight: 600; color: #0f172a; flex: 2; min-width: 200px; }
+        .q-item .q-meta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .q-item .q-meta span { background: #f1f5f9; padding: 4px 12px; border-radius: 60px; font-size: 13px; font-weight: 600; color: #475569; }
+        .q-item .q-meta .points-badge { background: #dbeafe; color: #1e3a8a; }
+        .q-item .q-del { background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 18px; padding: 0 8px; }
+        .q-item .q-del:hover { color: #dc2626; }
+        .empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; }
+        .empty-state h3 { color: #64748b; font-size: 18px; margin-bottom: 6px; }
+
+        /* Add Question Form */
+        .add-q-form { background: white; border-radius: 24px; padding: 20px 25px; margin-top: 20px; border: 1px solid #e2e8f0; }
+        .add-q-form h4 { font-weight: 800; color: #1e1b4b; margin-bottom: 12px; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+        .form-row input, .form-row select, .form-row textarea { flex: 1; min-width: 120px; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 14px; outline: none; font-family: 'Inter', sans-serif; background: #f8fafc; transition: 0.2s; }
+        .form-row input:focus, .form-row select:focus, .form-row textarea:focus { border-color: #b8860b; background: white; }
+        .form-row textarea { flex-basis: 100%; min-height: 60px; resize: vertical; }
+        .form-row .btn-add-q { padding: 12px 32px; background: #b8860b; color: white; border: none; border-radius: 60px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.2s; }
+        .form-row .btn-add-q:hover { background: #9a7709; }
+
+        /* ===== NEW: CSV Bulk Paste Section ===== */
+        .csv-paste-section { background: #f1f5f9; border-radius: 16px; padding: 16px 20px; margin-top: 12px; border: 2px dashed #cbd5e1; }
+        .csv-paste-section textarea { width: 100%; min-height: 120px; padding: 12px; border: 2px solid #e2e8f0; border-radius: 16px; font-family: 'Inter', sans-serif; font-size: 13px; outline: none; resize: vertical; background: white; }
+        .csv-paste-section textarea:focus { border-color: #b8860b; }
+        .csv-paste-section .btn-csv { padding: 8px 20px; border: none; border-radius: 60px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.2s; background: #0f172a; color: white; font-size: 13px; }
+        .csv-paste-section .btn-csv.download { background: #f59e0b; color: #1e1b4b; }
+        .csv-paste-section .btn-csv.download:hover { background: #d97706; }
+        .csv-paste-section .btn-csv.upload { background: #10b981; color: white; }
+        .csv-paste-section .btn-csv.upload:hover { background: #059669; }
+        .csv-paste-section .btn-outline { padding: 8px 20px; border-radius: 60px; border: 2px solid #e2e8f0; background: white; font-weight: 700; cursor: pointer; }
+
+        /* Publish / Results / Report Tabs */
+        .card-panel { background: white; border-radius: 24px; padding: 25px; border: 1px solid #e2e8f0; margin-bottom: 15px; }
+        .card-panel h4 { font-weight: 800; color: #1e1b4b; margin-bottom: 12px; }
+        .toggle-group { display: flex; flex-wrap: wrap; gap: 15px; margin: 15px 0; }
+        .toggle-group label { display: flex; align-items: center; gap: 8px; font-weight: 600; background: #f8fafc; padding: 10px 18px; border-radius: 60px; border: 2px solid #e2e8f0; cursor: pointer; }
+        .toggle-group label.active-toggle { border-color: #b8860b; background: #fef9e7; }
+        .btn-action { padding: 12px 32px; border: none; border-radius: 60px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; transition: 0.2s; }
+        .btn-primary { background: #b8860b; color: white; }
+        .btn-primary:hover { background: #9a7709; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-warning { background: #f59e0b; color: #1e1b4b; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-danger { background: #dc2626; color: white; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-outline { background: white; border: 2px solid #e2e8f0; color: #1e293b; }
+
+        .schedule-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
+        .schedule-grid label { font-weight: 600; color: #1e293b; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+        .schedule-grid input { padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 14px; font-family: 'Inter', sans-serif; background: white; outline: none; }
+        .schedule-grid input:focus { border-color: #b8860b; }
+        .flex-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 10px 12px; border: 1px solid #e2e8f0; text-align: center; }
+        th { background: #f1f5f9; font-weight: 700; }
+        .rep-input { width: 60px; padding: 6px 4px; text-align: center; border-radius: 30px; border: 2px solid #e2e8f0; font-family: 'Inter', sans-serif; }
+
+        /* ===== REPORT CARD BUILDER STYLES ===== */
+        .report-builder-container { background: white; border-radius: 24px; padding: 25px; border: 1px solid #e2e8f0; margin-top: 15px; }
+        .report-builder-container .section-title { font-weight: 800; color: #1e1b4b; font-size: 18px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+        .report-builder-container .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .report-builder-container .form-grid .full-width { grid-column: 1 / -1; }
+        .report-builder-container .form-grid label { font-weight: 600; color: #1e293b; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+        .report-builder-container .form-grid input, .report-builder-container .form-grid select, .report-builder-container .form-grid textarea { padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 16px; font-size: 14px; font-family: 'Inter', sans-serif; background: white; outline: none; }
+        .report-builder-container .form-grid input:focus, .report-builder-container .form-grid select:focus, .report-builder-container .form-grid textarea:focus { border-color: #b8860b; }
+        .report-builder-container .form-grid textarea { resize: vertical; min-height: 60px; }
+
+        .checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin: 10px 0; }
+        .checkbox-grid .checkbox-item { display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 8px 14px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .checkbox-grid .checkbox-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #b8860b; cursor: pointer; }
+        .checkbox-grid .checkbox-item label { font-weight: 600; color: #1e293b; font-size: 14px; cursor: pointer; }
+
+        .quality-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin: 10px 0; }
+        .quality-grid .quality-item { display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 8px 14px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .quality-grid .quality-item label { font-weight: 600; color: #1e293b; font-size: 14px; min-width: 80px; }
+        .quality-grid .quality-item select { padding: 4px 8px; border: 2px solid #e2e8f0; border-radius: 30px; font-size: 13px; font-family: 'Inter', sans-serif; background: white; outline: none; }
+
+        .student-report-row { background: #f8fafc; border-radius: 16px; padding: 15px; margin-bottom: 15px; border: 1px solid #e2e8f0; }
+        .student-report-row .student-name { font-weight: 800; color: #1e1b4b; font-size: 16px; margin-bottom: 10px; }
+        .student-report-row .subject-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+        .student-report-row .subject-grid .subject-input { display: flex; flex-direction: column; gap: 2px; }
+        .student-report-row .subject-grid .subject-input label { font-weight: 600; color: #475569; font-size: 12px; }
+        .student-report-row .subject-grid .subject-input input { padding: 6px 10px; border: 2px solid #e2e8f0; border-radius: 30px; font-size: 13px; width: 100%; text-align: center; font-family: 'Inter', sans-serif; outline: none; }
+        .student-report-row .subject-grid .subject-input input:focus { border-color: #b8860b; }
+        .student-report-row .subject-grid .subject-input .exam-auto { background: #fef9e7; color: #b8860b; font-weight: 700; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        @media (max-width: 800px) {
+            .sidebar { width: 100%; min-width: unset; height: auto; border-right: none; border-bottom: 1px solid #e2e8f0; padding: 15px; }
+            #dashboardPage { flex-direction: column; }
+            .main-panel { padding: 15px; }
+            .schedule-grid { grid-template-columns: 1fr; }
+            .report-builder-container .form-grid { grid-template-columns: 1fr; }
+            .checkbox-grid { grid-template-columns: 1fr 1fr; }
+            .quality-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- LOGIN PAGE -->
+    <div id="loginPage" class="page active">
+        <div class="login-box">
+            <h2>👨‍🏫 JUDAH <span>WONDERS</span></h2>
+            <p>Select your class to continue.</p>
+            <input id="loginName" placeholder="👤 Your Full Name" />
+            <select id="loginClassSelect">
+                <option value="">-- Loading Classes --</option>
+            </select>
+            <button id="loginBtn">🚀 Enter Dashboard</button>
+            <p id="loginErr" class="login-error"></p>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboardPage" class="page">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="brand">🏫 <span>JUDAH</span> WONDERS</div>
+            <div class="user-info">
+                <span class="name" id="sidebarName">Teacher</span>
+                <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
+            </div>
+            <div class="class-switcher">
+                <select id="classSelect">
+                    <option value="">-- Select Class --</option>
+                </select>
+                <button id="switchClassBtn">Switch</button>
+            </div>
+            <div class="sidebar-title">
+                <span>📚 Subjects</span>
+                <span id="subjectCount" style="background:#e2e8f0; padding:2px 12px; border-radius:60px; font-size:12px;">0</span>
+            </div>
+            <div class="add-subject-row">
+                <input id="newSubjectInput" placeholder="New Subject..." />
+                <button id="addSubjectBtn">➕</button>
+            </div>
+            <div class="subject-list" id="subjectListContainer">
+                <div style="color:#94a3b8; text-align:center; padding:20px; font-size:14px;">No subjects yet.<br />Add one above!</div>
+            </div>
+        </div>
+
+        <!-- Main Panel -->
+        <div class="main-panel">
+            <div class="panel-header">
+                <h2>📖 <span id="selectedSubjectName">Select a Subject</span></h2>
+                <div class="badge-points" id="totalPointsBadge">⭐ Total Points: 0</div>
+            </div>
+
+            <!-- Main Tabs -->
+            <div class="main-tabs">
+                <button class="main-tab active" data-tab="tabQuestions">📝 Questions</button>
+                <button class="main-tab" data-tab="tabPublish">📢 Publish</button>
+                <button class="main-tab" data-tab="tabResults">📊 Results</button>
+                <button class="main-tab" data-tab="tabReports">📋 Reports</button>
+            </div>
+
+            <!-- TAB 1: QUESTIONS (UPDATED with Bulk Paste CSV) -->
+            <div id="tabQuestions" class="tab-content active">
+                <div id="questionsContainer">
+                    <div class="empty-state"><h3>👈 Select a subject</h3><p>Click on a subject from the left sidebar.</p></div>
+                </div>
+                <div id="addQuestionArea" style="display:none;" class="add-q-form">
+                    <h4>✏️ Add New Question</h4>
+                    <div class="form-row"><textarea id="qText" placeholder="Type your question here..."></textarea></div>
+                    <div class="form-row">
+                        <input id="optA" placeholder="Option A" /><input id="optB" placeholder="Option B" />
+                        <input id="optC" placeholder="Option C" /><input id="optD" placeholder="Option D" />
+                    </div>
+                    <div class="form-row">
+                        <select id="correctAns"><option>A</option><option>B</option><option>C</option><option>D</option></select>
+                        <input id="qPoints" type="number" placeholder="Points" value="5" min="1" />
+                        <button class="btn-add-q" id="addQuestionBtn">➕ Add Question</button>
+                    </div>
+
+                    <!-- ===== NEW: Bulk Paste CSV Section ===== -->
+                    <div class="csv-paste-section">
+                        <h4 style="font-weight:700; color:#1e1b4b; margin-bottom:8px;">📋 Bulk Paste CSV</h4>
+                        <p style="font-size:13px; color:#64748b; margin-bottom:8px;">Paste your CSV data below. Format: <strong>Subject, Question, OptionA, OptionB, OptionC, OptionD, CorrectAnswer, Points</strong></p>
+                        <textarea id="csvPasteArea" placeholder="Paste your CSV here...
+Subject,Question,OptionA,OptionB,OptionC,OptionD,CorrectAnswer,Points
+Mathematics,What is 2+2?,3,4,5,6,B,5
+English,What is the capital of Nigeria?,Lagos,Abuja,Kano,Ibadan,B,5"></textarea>
+                        <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+                            <button class="btn-csv upload" id="pasteCsvBtn">⬆️ Upload Pasted CSV</button>
+                            <button class="btn-csv download" id="downloadCsvBtn">📥 Download Template</button>
+                            <button class="btn-outline" id="clearPasteBtn" style="padding:8px 20px; border-radius:60px; border:2px solid #e2e8f0; background:white; font-weight:700; cursor:pointer;">🗑️ Clear</button>
+                        </div>
+                        <div id="pasteStatus" style="margin-top:8px; font-weight:600;"></div>
+                    </div>
+
+                    <!-- File Upload Section (kept for compatibility) -->
+                    <div class="csv-section" style="margin-top:12px;">
+                        <label style="font-weight:600; color:#1e293b;">📄 OR Upload CSV File:</label>
+                        <input type="file" id="csvFileInput" accept=".csv" style="display:inline-block; margin:8px 0;" />
+                        <button class="btn-csv upload" id="uploadCsvBtn">⬆️ Upload File</button>
+                        <span style="font-size:12px; color:#64748b; margin-left:8px;">(Subject, Question, A, B, C, D, Correct, Points)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: PUBLISH -->
+            <div id="tabPublish" class="tab-content">
+                <div class="card-panel">
+                    <h4>📢 Publish Exams with Schedule</h4>
+                    <p style="color:#64748b; margin-bottom:10px;">Select subjects, set the exam window, and define how long each student has to complete it.</p>
+                    
+                    <div id="examToggles" class="toggle-group">Loading subjects...</div>
+                    
+                    <div class="schedule-grid">
+                        <label>📅 Start Date & Time
+                            <input type="datetime-local" id="startDateTime" />
+                        </label>
+                        <label>📅 End Date & Time
+                            <input type="datetime-local" id="endDateTime" />
+                        </label>
+                        <label>⏱️ Per-Student Duration (minutes)
+                            <input type="number" id="durationMinutes" placeholder="e.g. 30" value="30" min="1" max="180" />
+                        </label>
+                        <div style="display: flex; align-items: flex-end; gap: 8px;">
+                            <button class="btn-action btn-warning" id="forceStartBtn" style="flex:1;">⚡ Force Start Now</button>
+                            <button class="btn-action btn-danger" id="stopExamBtn" style="flex:1;">🛑 Stop Exam</button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-actions">
+                        <button class="btn-action btn-success" id="publishWithScheduleBtn">📤 Save Schedule & Publish</button>
+                        <button class="btn-action btn-outline" id="clearScheduleBtn">🗑️ Clear Schedule</button>
+                    </div>
+                    <p id="publishStatus" style="margin-top:10px; font-weight:600; color:#059669;"></p>
+                </div>
+            </div>
+
+            <!-- TAB 3: RESULTS -->
+            <div id="tabResults" class="tab-content">
+                <div class="card-panel">
+                    <h4>📊 Student Results</h4>
+                    <div id="resultsContainer" class="table-wrap">No results yet.</div>
+                </div>
+            </div>
+
+            <!-- TAB 4: REPORTS -->
+            <div id="tabReports" class="tab-content">
+                <div class="card-panel">
+                    <h4>📋 Build Report Cards</h4>
+                    <p style="color:#64748b; margin-bottom:15px;">Fill in the details for each student's report card. Third Term Exam scores are auto-filled from CBT results. <strong>You can edit any exam score directly.</strong></p>
+                    
+                    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+                        <button class="btn-action btn-primary" id="buildReportBtn">📋 Load Students</button>
+                        <button class="btn-action btn-success" id="calcAllBtn">🔢 Auto-Calculate All</button>
+                        <button class="btn-action btn-warning" id="pushAdminBtn">📤 Push to Admin</button>
+                    </div>
+                    
+                    <div id="reportBuilderArea"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // =============================================================
+    // FIREBASE CONFIG — JUDAH WONDERS
+    // =============================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyAqayttjbGIy2WDsL_x6guPLVnfiNUKmyc",
+        authDomain: "judahexam.firebaseapp.com",
+        projectId: "judahexam",
+        storageBucket: "judahexam.firebasestorage.app",
+        messagingSenderId: "451288402445",
+        appId: "1:451288402445:web:d113278acec9dc52c26344",
+        measurementId: "G-GG4E5P8K7Z"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    auth.signInAnonymously().catch(e => console.error("Auth failed:", e));
+
+    // =============================================================
+    // TOAST SYSTEM
+    // =============================================================
+    function showToast(message, type = "success") {
+        const container = document.getElementById('toastContainer');
+        const icons = { success: '✅', error: '❌', warning: '⚠️' };
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<span class="icon">${icons[type] || '📢'}</span> ${message}`;
+        container.appendChild(toast);
+        setTimeout(() => { toast.classList.add('hide'); setTimeout(() => toast.remove(), 400); }, 4000);
+    }
+
+    // =============================================================
+    // HELPERS
+    // =============================================================
+    function normalizeClass(str) {
+        return str.trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    // =============================================================
+    // STATE
+    // =============================================================
+    let currentUser = { name: '', class: '' };
+    let currentSubjects = [];
+    let selectedSubject = null;
+    let currentQuestions = [];
+    let masterClassList = [];
+    const $ = (id) => document.getElementById(id);
+
+    // =============================================================
+    // LOAD MASTER CLASS LIST & POPULATE DROPDOWNS
+    // =============================================================
+    async function loadMasterClassList() {
+        try {
+            const doc = await db.collection('classList').doc('allClasses').get();
+            if (doc.exists) {
+                masterClassList = doc.data().classes || [];
+            } else {
+                masterClassList = ['Nursery 1', 'Nursery 2', 'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5', 'Basic 6'];
+                await db.collection('classList').doc('allClasses').set({ classes: masterClassList });
+            }
+            populateDropdowns();
+        } catch (e) {
+            console.error("Error loading master class list:", e);
+            masterClassList = ['Nursery 1', 'Nursery 2', 'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5', 'Basic 6'];
+            populateDropdowns();
+        }
+    }
+
+    function populateDropdowns() {
+        const loginSelect = $('loginClassSelect');
+        loginSelect.innerHTML = '<option value="">-- Select Class --</option>';
+        masterClassList.forEach(cls => {
+            loginSelect.innerHTML += `<option value="${cls}">${cls}</option>`;
+        });
+
+        const sidebarSelect = $('classSelect');
+        sidebarSelect.innerHTML = '<option value="">-- Select Class --</option>';
+        masterClassList.forEach(cls => {
+            sidebarSelect.innerHTML += `<option value="${cls}">${cls}</option>`;
+        });
+
+        if (currentUser.class) {
+            $('classSelect').value = currentUser.class;
+        }
+    }
+
+    // =============================================================
+    // LOGIN
+    // =============================================================
+    $('loginBtn').addEventListener('click', async () => {
+        const name = $('loginName').value.trim();
+        const cls = $('loginClassSelect').value;
+        const err = $('loginErr');
+
+        if (!name) return err.innerText = '⚠️ Please enter your name.';
+        if (!cls) return err.innerText = '⚠️ Please select a class.';
+
+        currentUser = { name, class: cls };
+        err.innerText = '';
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        $('dashboardPage').classList.add('active');
+        $('sidebarName').innerText = name + ' 👨‍🏫';
+        $('classSelect').value = cls;
+        showToast(`👋 Welcome, ${name}!`, 'success');
+        await loadSubjects(cls);
+        await loadSchedule(cls);
+    });
+
+    $('logoutBtn').addEventListener('click', () => {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        $('loginPage').classList.add('active');
+        currentUser = {};
+        selectedSubject = null;
+        showToast('👋 Logged out.', 'warning');
+    });
+
+    // =============================================================
+    // CLASS SWITCH
+    // =============================================================
+    $('switchClassBtn').addEventListener('click', async () => {
+        const newClass = $('classSelect').value;
+        if (!newClass) return showToast('⚠️ Please select a class.', 'error');
+        if (newClass === currentUser.class) return showToast('ℹ️ Already in that class.', 'warning');
+
+        currentUser.class = newClass;
+        selectedSubject = null;
+        await loadSubjects(newClass);
+        await loadSchedule(newClass);
+        showToast(`🔄 Switched to ${newClass}`, 'success');
+    });
+
+    // =============================================================
+    // SUBJECTS
+    // =============================================================
+    async function loadSubjects(cls) {
+        try {
+            const doc = await db.collection('classes').doc(cls).get();
+            if (doc.exists) {
+                currentSubjects = doc.data().subjects || [];
+            } else {
+                currentSubjects = ['English', 'Mathematics', 'Science'];
+                await db.collection('classes').doc(cls).set({ subjects: currentSubjects });
+            }
+            renderSubjects();
+            if (selectedSubject && currentSubjects.includes(selectedSubject)) {
+                selectSubject(selectedSubject);
+            } else {
+                selectedSubject = null;
+                clearQuestionPanel();
+            }
+            loadExamToggles(cls);
+            loadResults(cls);
+        } catch (e) {
+            showToast('❌ Error loading subjects: ' + e.message, 'error');
+            setTimeout(() => loadSubjects(cls), 3000);
+        }
+    }
+
+    function renderSubjects() {
+        const container = $('subjectListContainer');
+        $('subjectCount').innerText = currentSubjects.length;
+        if (!currentSubjects.length) {
+            return container.innerHTML = `<div style="color:#94a3b8; text-align:center; padding:20px;">No subjects.<br />Add one above!</div>`;
+        }
+        container.innerHTML = currentSubjects.map(sub => `
+            <div class="subject-item ${selectedSubject === sub ? 'active' : ''}" data-sub="${sub}">
+                <span>📘 ${sub}</span>
+                <button class="del-sub" data-sub="${sub}">✕</button>
+            </div>
+        `).join('');
+        container.querySelectorAll('.subject-item').forEach(el => {
+            el.addEventListener('click', (e) => { if (e.target.classList.contains('del-sub')) return;
+                selectSubject(el.dataset.sub); });
+        });
+        container.querySelectorAll('.del-sub').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const sub = btn.dataset.sub;
+                if (!confirm(`Delete "${sub}" and all its questions?`)) return;
+                try {
+                    const snap = await db.collection('questions').where('class', '==', currentUser.class).where(
+                        'subject', '==', sub).get();
+                    const batch = db.batch();
+                    snap.forEach(d => batch.delete(d.ref));
+                    await batch.commit();
+                    currentSubjects = currentSubjects.filter(s => s !== sub);
+                    await db.collection('classes').doc(currentUser.class).update({ subjects: currentSubjects });
+                    if (selectedSubject === sub) { selectedSubject = null;
+                        clearQuestionPanel(); }
+                    renderSubjects();
+                    showToast(`🗑️ "${sub}" deleted.`, 'warning');
+                } catch (e) { showToast('❌ Error deleting subject.', 'error'); }
+            });
+        });
+    }
+
+    $('addSubjectBtn').addEventListener('click', async () => {
+        const val = $('newSubjectInput').value.trim();
+        if (!val) return showToast('⚠️ Enter a subject name.', 'warning');
+        if (currentSubjects.includes(val)) return showToast('⚠️ Already exists.', 'warning');
+
+        try {
+            const updatedSubjects = [...currentSubjects, val];
+            await db.collection('classes').doc(currentUser.class).update({ subjects: updatedSubjects });
+            currentSubjects = updatedSubjects;
+            $('newSubjectInput').value = '';
+            renderSubjects();
+            showToast(`✅ "${val}" added!`, 'success');
+        } catch (e) {
+            showToast('❌ Error adding subject: ' + e.message, 'error');
+            await loadSubjects(currentUser.class);
+        }
+    });
+
+    // =============================================================
+    // QUESTIONS
+    // =============================================================
+    async function selectSubject(subject) {
+        selectedSubject = subject;
+        renderSubjects();
+        $('selectedSubjectName').innerText = subject;
+        $('addQuestionArea').style.display = 'block';
+        $('questionsContainer').innerHTML = '<p style="color:#94a3b8;">⏳ Loading...</p>';
+        try {
+            const snap = await db.collection('questions').where('class', '==', currentUser.class).where('subject', '==',
+                subject).get();
+            currentQuestions = [];
+            snap.forEach(doc => currentQuestions.push({ id: doc.id, ...doc.data() }));
+            renderQuestions();
+        } catch (e) { showToast('❌ Error loading questions.', 'error'); }
+    }
+
+    function renderQuestions() {
+        const container = $('questionsContainer');
+        const totalPoints = currentQuestions.reduce((sum, q) => sum + (parseInt(q.points) || 0), 0);
+        $('totalPointsBadge').innerHTML = `⭐ Total Points: ${totalPoints}`;
+        if (!currentQuestions.length) return container.innerHTML =
+            `<div class="empty-state"><h3>📭 No questions</h3><p>Add questions below for <strong>${selectedSubject}</strong>.</p></div>`;
+        let html = `<div class="question-grid">`;
+        currentQuestions.forEach((q, idx) => {
+            html += `<div class="q-item">
+                <div class="q-text">${idx+1}. ${q.question}</div>
+                <div class="q-meta">
+                    <span>${q.options.join(' | ')}</span>
+                    <span class="points-badge">⭐ ${q.points || 5}</span>
+                    <span>✅ ${q.correct}</span>
+                    <button class="q-del" data-id="${q.id}">✕</button>
+                </div>
+            </div>`;
+        });
+        container.innerHTML = html + '</div>';
+        container.querySelectorAll('.q-del').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (!confirm('Delete this question?')) return;
+                try {
+                    await db.collection('questions').doc(btn.dataset.id).delete();
+                    currentQuestions = currentQuestions.filter(q => q.id !== btn.dataset.id);
+                    renderQuestions();
+                    showToast('🗑️ Question deleted.', 'warning');
+                } catch (e) { showToast('❌ Error deleting.', 'error'); }
+            });
+        });
+    }
+
+    function clearQuestionPanel() {
+        $('selectedSubjectName').innerText = 'Select a Subject';
+        $('totalPointsBadge').innerHTML = '⭐ Total Points: 0';
+        $('questionsContainer').innerHTML =
+            `<div class="empty-state"><h3>👈 Select a subject</h3><p>Click on a subject from the left sidebar.</p></div>`;
+        $('addQuestionArea').style.display = 'none';
+    }
+
+    // =============================================================
+    // ADD SINGLE QUESTION
+    // =============================================================
+    $('addQuestionBtn').addEventListener('click', async () => {
+        if (!selectedSubject) return showToast('⚠️ Select a subject first.', 'warning');
+        const question = $('qText').value.trim();
+        const options = [$('optA').value.trim(), $('optB').value.trim(), $('optC').value.trim(), $('optD').value.trim()];
+        const correct = $('correctAns').value;
+        const points = parseInt($('qPoints').value) || 5;
+        if (!question || options.some(o => !o)) return showToast('⚠️ Fill all fields.', 'error');
+        try {
+            await db.collection('questions').add({ class: currentUser.class, subject: selectedSubject, question,
+                options, correct, points, createdAt: new Date() });
+            $('qText').value = '';
+            ['optA','optB','optC','optD'].forEach(id => $(id).value = '');
+            await selectSubject(selectedSubject);
+            showToast('✅ Question added!', 'success');
+        } catch (e) { showToast('❌ Error adding.', 'error'); }
+    });
+
+    // =============================================================
+    // BULK PASTE CSV (NEW)
+    // =============================================================
+    $('pasteCsvBtn').addEventListener('click', async () => {
+        if (!selectedSubject) return showToast('⚠️ Please select a subject first.', 'warning');
+        
+        const csvText = $('csvPasteArea').value.trim();
+        if (!csvText) return showToast('⚠️ Please paste some CSV data.', 'warning');
+
+        const statusEl = $('pasteStatus');
+        statusEl.innerText = '⏳ Processing...';
+        statusEl.style.color = '#64748b';
+
+        Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            complete: async (res) => {
+                const data = res.data;
+                let added = 0, errors = 0;
+                const batch = db.batch();
+                
+                for (let row of data) {
+                    const sub = row.Subject?.trim() || selectedSubject;
+                    const q = row.Question?.trim();
+                    const opts = [row.OptionA?.trim(), row.OptionB?.trim(), row.OptionC?.trim(), row.OptionD?.trim()];
+                    const correct = row.CorrectAnswer?.trim().toUpperCase();
+                    const pts = parseInt(row.Points) || 5;
+                    
+                    if (!q || opts.some(o => !o) || !['A','B','C','D'].includes(correct)) { errors++; continue; }
+                    
+                    const ref = db.collection('questions').doc();
+                    batch.set(ref, {
+                        class: currentUser.class,
+                        subject: sub,
+                        question: q,
+                        options: opts,
+                        correct: correct,
+                        points: pts,
+                        createdAt: new Date()
+                    });
+                    added++;
+                    
+                    if (added % 400 === 0) { await batch.commit(); /* create new batch */ }
+                }
+                
+                try { await batch.commit(); } catch (e) { /* ignore if already committed */ }
+                
+                $('csvPasteArea').value = '';
+                if (errors > 0) {
+                    statusEl.innerText = `⚠️ ${added} added, ${errors} rows skipped.`;
+                    statusEl.style.color = '#d97706';
+                    showToast(`⚠️ ${added} questions added, ${errors} rows had errors.`, 'warning');
+                } else {
+                    statusEl.innerText = `✅ ${added} questions added successfully!`;
+                    statusEl.style.color = '#059669';
+                    showToast(`✅ ${added} questions pasted successfully!`, 'success');
+                }
+                await selectSubject(selectedSubject);
+            },
+            error: (e) => {
+                statusEl.innerText = '❌ Failed to parse CSV: ' + e.message;
+                statusEl.style.color = '#dc2626';
+                showToast('❌ Error parsing CSV.', 'error');
+            }
+        });
+    });
+
+    // Clear Paste Area
+    $('clearPasteBtn').addEventListener('click', () => {
+        $('csvPasteArea').value = '';
+        $('pasteStatus').innerText = '';
+        showToast('🗑️ Cleared.', 'warning');
+    });
+
+    // =============================================================
+    // DOWNLOAD CSV TEMPLATE
+    // =============================================================
+    $('downloadCsvBtn').addEventListener('click', () => {
+        const headers = ['Subject', 'Question', 'OptionA', 'OptionB', 'OptionC', 'OptionD', 'CorrectAnswer', 'Points'];
+        const example = [selectedSubject || 'Mathematics', 'What is 2+2?', '3', '4', '5', '6', 'B', '5'];
+        const csv = headers.join(',') + '\n' + example.join(',');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `questions_template_${currentUser.class}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showToast('📥 Template downloaded!', 'success');
+    });
+
+    // =============================================================
+    // UPLOAD CSV FILE (kept for compatibility)
+    // =============================================================
+    $('uploadCsvBtn').addEventListener('click', async () => {
+        const file = $('csvFileInput').files[0];
+        if (!file) return showToast('⚠️ Select a CSV file.', 'warning');
+        if (!selectedSubject) return showToast('⚠️ Select a subject.', 'warning');
+        
+        Papa.parse(file, { header: true, skipEmptyLines: true, complete: async (res) => {
+                let batch = db.batch(), added = 0, errors = 0;
+                for (let row of res.data) {
+                    const sub = row.Subject?.trim() || selectedSubject;
+                    const q = row.Question?.trim();
+                    const opts = [row.OptionA?.trim(), row.OptionB?.trim(), row.OptionC?.trim(), row.OptionD?.trim()];
+                    const correct = row.CorrectAnswer?.trim().toUpperCase();
+                    const pts = parseInt(row.Points) || 5;
+                    if (!q || opts.some(o => !o) || !['A','B','C','D'].includes(correct)) { errors++; continue; }
+                    const ref = db.collection('questions').doc();
+                    batch.set(ref, { class: currentUser.class, subject: sub, question: q, options: opts, correct, points: pts, createdAt: new Date() });
+                    added++;
+                    if (added % 400 === 0) { await batch.commit(); batch = db.batch(); }
+                }
+                await batch.commit();
+                $('csvFileInput').value = '';
+                await selectSubject(selectedSubject);
+                if (errors) showToast(`⚠️ ${added} uploaded, ${errors} skipped.`, 'warning');
+                else showToast(`✅ ${added} questions uploaded!`, 'success');
+            } });
+    });
+
+    // =============================================================
+    // PUBLISH TAB
+    // =============================================================
+    async function loadExamToggles(cls) {
+        const status = await db.collection('examStatus').doc(cls).get();
+        const active = status.exists ? status.data().activeSubjects || [] : [];
+        const container = $('examToggles');
+        if (!currentSubjects.length) return container.innerHTML = '<p>Add subjects first.</p>';
+        container.innerHTML = currentSubjects.map(s => `
+            <label class="${active.includes(s) ? 'active-toggle' : ''}">
+                <input type="checkbox" class="examCb" value="${s}" ${active.includes(s) ? 'checked' : ''} />
+                ${s}
+            </label>
+        `).join('');
+        container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', () => {
+                cb.closest('label').classList.toggle('active-toggle');
+            });
+        });
+    }
+
+    async function loadSchedule(cls) {
+        try {
+            const doc = await db.collection('examControls').doc(cls).get();
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.scheduledStart) {
+                    $('startDateTime').value = data.scheduledStart.toDate().toISOString().slice(0, 16);
+                }
+                if (data.scheduledEnd) {
+                    $('endDateTime').value = data.scheduledEnd.toDate().toISOString().slice(0, 16);
+                }
+                $('durationMinutes').value = data.durationMinutes || 30;
+                $('publishStatus').innerText = `✅ Schedule loaded. Active: ${data.isActive ? 'YES' : 'NO'}`;
+                $('publishStatus').style.color = data.isActive ? '#059669' : '#dc2626';
+            } else {
+                $('publishStatus').innerText = 'No schedule set for this class.';
+                $('publishStatus').style.color = '#64748b';
+            }
+        } catch (e) {
+            console.error("Error loading schedule:", e);
+        }
+    }
+
+    $('publishWithScheduleBtn').addEventListener('click', async () => {
+        const startStr = $('startDateTime').value;
+        const endStr = $('endDateTime').value;
+        const duration = parseInt($('durationMinutes').value) || 30;
+
+        if (!startStr || !endStr) {
+            return showToast('⚠️ Please set both Start and End Date/Time.', 'warning');
+        }
+
+        const startDate = new Date(startStr);
+        const endDate = new Date(endStr);
+
+        if (startDate >= endDate) {
+            return showToast('⚠️ Start time must be before End time.', 'error');
+        }
+
+        if (duration < 1 || duration > 180) {
+            return showToast('⚠️ Duration must be between 1 and 180 minutes.', 'warning');
+        }
+
+        try {
+            await db.collection('examControls').doc(currentUser.class).set({
+                scheduledStart: firebase.firestore.Timestamp.fromDate(startDate),
+                scheduledEnd: firebase.firestore.Timestamp.fromDate(endDate),
+                durationMinutes: duration,
+                isActive: true,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            const active = [...document.querySelectorAll('.examCb:checked')].map(cb => cb.value);
+            await db.collection('examStatus').doc(currentUser.class).set({
+                activeSubjects: active,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            $('publishStatus').innerText = `✅ Published! Students can take: ${active.join(', ') || 'none'} from ${startDate.toLocaleString()} to ${endDate.toLocaleString()} (${duration} min each)`;
+            $('publishStatus').style.color = '#059669';
+            showToast('✅ Schedule & Subjects published successfully!', 'success');
+        } catch (e) {
+            showToast('❌ Error publishing: ' + e.message, 'error');
+        }
+    });
+
+    $('forceStartBtn').addEventListener('click', async () => {
+        const duration = parseInt($('durationMinutes').value) || 30;
+        if (duration < 1 || duration > 180) {
+            return showToast('⚠️ Duration must be between 1 and 180 minutes.', 'warning');
+        }
+
+        try {
+            const now = new Date();
+            const endStr = $('endDateTime').value;
+            let endDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+            if (endStr) {
+                const existingEnd = new Date(endStr);
+                if (existingEnd > now) endDate = existingEnd;
+            }
+
+            await db.collection('examControls').doc(currentUser.class).set({
+                scheduledStart: firebase.firestore.Timestamp.fromDate(now),
+                scheduledEnd: firebase.firestore.Timestamp.fromDate(endDate),
+                durationMinutes: duration,
+                isActive: true,
+                forceStarted: true,
+                forceStartedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            const active = [...document.querySelectorAll('.examCb:checked')].map(cb => cb.value);
+            await db.collection('examStatus').doc(currentUser.class).set({
+                activeSubjects: active,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            $('publishStatus').innerText = `⚡ Exam FORCE STARTED! Students can take: ${active.join(', ') || 'none'} (${duration} min each)`;
+            $('publishStatus').style.color = '#d97706';
+            showToast('⚡ Exam force-started successfully!', 'success');
+            $('startDateTime').value = now.toISOString().slice(0, 16);
+            $('endDateTime').value = endDate.toISOString().slice(0, 16);
+        } catch (e) {
+            showToast('❌ Error force starting: ' + e.message, 'error');
+        }
+    });
+
+    $('stopExamBtn').addEventListener('click', async () => {
+        if (!confirm('🛑 Are you sure you want to stop this exam immediately?')) return;
+        try {
+            await db.collection('examControls').doc(currentUser.class).set({
+                isActive: false,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            $('publishStatus').innerText = '🛑 Exam stopped. Students cannot take this exam.';
+            $('publishStatus').style.color = '#dc2626';
+            showToast('🛑 Exam stopped successfully.', 'warning');
+        } catch (e) {
+            showToast('❌ Error stopping exam: ' + e.message, 'error');
+        }
+    });
+
+    $('clearScheduleBtn').addEventListener('click', async () => {
+        if (!confirm('🗑️ Clear the schedule for this class?')) return;
+        try {
+            await db.collection('examControls').doc(currentUser.class).delete();
+            $('startDateTime').value = '';
+            $('endDateTime').value = '';
+            $('durationMinutes').value = '30';
+            $('publishStatus').innerText = '🗑️ Schedule cleared.';
+            $('publishStatus').style.color = '#64748b';
+            showToast('🗑️ Schedule cleared.', 'warning');
+        } catch (e) {
+            showToast('❌ Error clearing schedule: ' + e.message, 'error');
+        }
+    });
+
+    // =============================================================
+    // RESULTS
+    // =============================================================
+    async function loadResults(cls) {
+        const snap = await db.collection('results').where('class', '==', cls).get();
+        const container = $('resultsContainer');
+        if (snap.empty) return container.innerHTML = '<p style="color:#64748b;">No results yet.</p>';
+        let html = '<table><tr><th>Student</th><th>Subject</th><th>Score</th><th>Total</th><th>Date</th></tr>';
+        snap.forEach(d => { const data = d.data();
+            html +=
+                `<tr><td><strong>${data.studentName}</strong></td><td>${data.subject}</td><td>${data.score}</td><td>${data.totalQuestions}</td><td>${data.submittedAt?.toDate?.()?.toLocaleDateString() || 'N/A'}</td></tr>`; });
+        container.innerHTML = html + '</table>';
+    }
+
+    // =============================================================
+    // REPORTS TAB (with Editable Exam Scores)
+    // =============================================================
+    let reportStudents = [];
+    let allStudentResults = {};
+
+    $('buildReportBtn').addEventListener('click', async () => {
+        const cls = currentUser.class;
+        const area = $('reportBuilderArea');
+        area.innerHTML = '<p style="color:#64748b;">⏳ Loading students and results...</p>';
+
+        try {
+            // 1. Fetch all results for this class to get student names
+            const resultsSnap = await db.collection('results').where('class', '==', cls).get();
+            const studentSet = new Set();
+            allStudentResults = {};
+            resultsSnap.forEach(d => {
+                const data = d.data();
+                studentSet.add(data.studentName);
+                if (!allStudentResults[data.studentName]) allStudentResults[data.studentName] = {};
+                allStudentResults[data.studentName][data.subject] = data.score;
+            });
+
+            if (studentSet.size === 0) {
+                area.innerHTML = '<p style="color:#dc2626;">⚠️ No student results found. Students must take exams first.</p>';
+                return;
+            }
+
+            reportStudents = Array.from(studentSet);
+
+            // 2. Check if we have existing report cards to pre-fill
+            const existingSnap = await db.collection('reportCards').where('class', '==', cls).where('term', '==', 'Third')
+                .get();
+            const prefillMap = {};
+            existingSnap.forEach(d => {
+                const data = d.data();
+                prefillMap[data.studentName] = data;
+            });
+
+            // 3. Build the HTML with EDITABLE EXAM SCORES
+            let html = `
+                <div class="report-builder-container">
+                    <div class="section-title">📋 ${cls} - Third Term Report Cards</div>
+                    
+                    <!-- School & Class Details -->
+                    <div class="form-grid">
+                        <label>🏫 School Name
+                            <input type="text" id="reportSchoolName" value="JUDAH WONDERS MODEL SCHOOL" />
+                        </label>
+                        <label>📚 Class
+                            <input type="text" id="reportClass" value="${cls}" />
+                        </label>
+                        <label>👨‍🏫 Class Teacher Name
+                            <input type="text" id="reportTeacherName" placeholder="Enter your full name" value="${currentUser.name}" />
+                        </label>
+                        <label>📅 Term
+                            <input type="text" id="reportTerm" value="Third Term" />
+                        </label>
+                        <label>📅 Session
+                            <input type="text" id="reportSession" value="${new Date().getFullYear()}" />
+                        </label>
+                        <label>📅 Date
+                            <input type="date" id="reportDate" value="${new Date().toISOString().slice(0, 10)}" />
+                        </label>
+                    </div>
+
+                    <!-- Attendance & Dates -->
+                    <div class="section-title" style="margin-top:20px;">📊 Attendance & School Dates</div>
+                    <div class="form-grid">
+                        <label>📅 School Resumption Date
+                            <input type="date" id="reportResumption" />
+                        </label>
+                        <label>📅 School Closing Date
+                            <input type="date" id="reportClosing" />
+                        </label>
+                        <label>📅 Next Term Resumption Date
+                            <input type="date" id="reportNextTerm" />
+                        </label>
+                        <label>📅 Days School Opened
+                            <input type="number" id="reportDaysOpen" value="90" min="1" />
+                        </label>
+                        <label>✅ Days Present
+                            <input type="number" id="reportDaysPresent" value="85" min="0" />
+                        </label>
+                        <label>❌ Days Absent
+                            <input type="number" id="reportDaysAbsent" value="5" min="0" />
+                        </label>
+                    </div>
+
+                    <!-- Qualities -->
+                    <div class="section-title" style="margin-top:20px;">⭐ Qualities & Character (Tick the appropriate number)</div>
+                    <div class="quality-grid" id="qualityGrid">
+                        <div class="quality-item"><label>Neatness</label><select class="quality-select"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></div>
+                        <div class="quality-item"><label>Punctuality</label><select class="quality-select"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></div>
+                        <div class="quality-item"><label>Honesty</label><select class="quality-select"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></div>
+                        <div class="quality-item"><label>Respectfulness</label><select class="quality-select"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></div>
+                        <div class="quality-item"><label>Diligence</label><select class="quality-select"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></div>
+                        <div class="quality-item"><label>Leadership</label><select class="quality-select"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></div>
+                        <div class="quality-item"><label>Self-Control</label><select class="quality-select"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></div>
+                        <div class="quality-item"><label>Cooperation</label><select class="quality-select"><option value="1">1</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select></div>
+                    </div>
+
+                    <!-- Extracurricular Activities -->
+                    <div class="section-title" style="margin-top:20px;">⚽ Extracurricular Activities (Tick those participated in)</div>
+                    <div class="checkbox-grid" id="extracurricularGrid">
+                        <div class="checkbox-item"><input type="checkbox" class="extracurricular-check" value="Sports" /><label>🏃 Sports</label></div>
+                        <div class="checkbox-item"><input type="checkbox" class="extracurricular-check" value="Music" /><label>🎵 Music</label></div>
+                        <div class="checkbox-item"><input type="checkbox" class="extracurricular-check" value="Drama" /><label>🎭 Drama</label></div>
+                        <div class="checkbox-item"><input type="checkbox" class="extracurricular-check" value="Debate" /><label>🗣️ Debate</label></div>
+                        <div class="checkbox-item"><input type="checkbox" class="extracurricular-check" value="Art" /><label>🎨 Art</label></div>
+                        <div class="checkbox-item"><input type="checkbox" class="extracurricular-check" value="Chess" /><label>♟️ Chess</label></div>
+                        <div class="checkbox-item"><input type="checkbox" class="extracurricular-check" value="Scouting" /><label>⛺ Scouting</label></div>
+                        <div class="checkbox-item"><input type="checkbox" class="extracurricular-check" value="Agriculture" /><label>🌱 Agriculture</label></div>
+                    </div>
+
+                    <!-- Teacher's Commentary -->
+                    <div class="section-title" style="margin-top:20px;">📝 Teacher's Commentary</div>
+                    <div class="form-grid">
+                        <div class="full-width">
+                            <textarea id="reportCommentary" placeholder="Enter your comments about the student's performance, strengths, and areas for improvement..." style="width:100%; min-height:80px; padding:12px; border:2px solid #e2e8f0; border-radius:16px; font-family:'Inter', sans-serif; font-size:14px; outline:none;"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Subject Scores Table -->
+                    <div class="section-title" style="margin-top:20px;">📖 Subject Scores</div>
+                    <p style="font-size:13px; color:#64748b; margin-bottom:10px;">💡 <strong>EXAM scores are auto-filled from CBT results.</strong> You can <strong>edit any exam score</strong> by typing directly into the blue cell. Changes are saved automatically.</p>
+                    <div style="overflow-x:auto;">
+                        <table style="font-size:13px; margin-top:10px;">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">S/N</th>
+                                    <th rowspan="2">SUBJECT</th>
+                                    ${reportStudents.map(student => `<th colspan="8" style="background:#fef9e7; color:#1e1b4b;">${student}</th>`).join('')}
+                                </tr>
+                                <tr>
+                                    ${reportStudents.map(() => `
+                                        <th>1ST</th>
+                                        <th>2ND</th>
+                                        <th>C.A</th>
+                                        <th>EXAM</th>
+                                        <th>3RD TOTAL</th>
+                                        <th>CUM TOTAL</th>
+                                        <th>GRADE</th>
+                                        <th>REMARK</th>
+                                    `).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+            // Subject rows - EXAM CELLS ARE EDITABLE
+            currentSubjects.forEach((sub, idx) => {
+                html += `<tr><td>${idx + 1}</td><td style="text-align:left; font-weight:700;">${sub}</td>`;
+                
+                reportStudents.forEach(student => {
+                    const prefill = prefillMap[student] || {};
+                    const subData = prefill.subjects ? prefill.subjects[sub] || {} : {};
+                    const firstTerm = subData.firstTerm !== undefined ? subData.firstTerm : '';
+                    const secondTerm = subData.secondTerm !== undefined ? subData.secondTerm : '';
+                    const ca = subData.thirdCA !== undefined ? subData.thirdCA : '';
+                    // Auto-filled from CBT results, but can be edited
+                    const exam = allStudentResults[student]?.[sub] !== undefined ? allStudentResults[student][sub] : '';
+                    
+                    html += `
+                        <td><input type="number" class="rep-input rep-first" data-student="${student}" data-sub="${sub}" value="${firstTerm}" style="width:45px;" /></td>
+                        <td><input type="number" class="rep-input rep-second" data-student="${student}" data-sub="${sub}" value="${secondTerm}" style="width:45px;" /></td>
+                        <td><input type="number" class="rep-input rep-ca" data-student="${student}" data-sub="${sub}" value="${ca}" style="width:45px;" /></td>
+                        <!-- EXAM CELL: Editable! Teachers can type any number. -->
+                        <td><input type="number" class="rep-input rep-exam-input" data-student="${student}" data-sub="${sub}" value="${exam !== '' ? exam : ''}" style="width:45px; background:#fef9e7; border-color:#b8860b; color:#1e1b4b; font-weight:700;" /></td>
+                        <td class="rep-third-total" data-student="${student}" data-sub="${sub}" style="font-weight:700; color:#1e1b4b;">--</td>
+                        <td class="rep-cum-total" data-student="${student}" data-sub="${sub}" style="font-weight:700; color:#1e1b4b;">--</td>
+                        <td class="rep-grade" data-student="${student}" data-sub="${sub}" style="font-weight:800;">--</td>
+                        <td class="rep-remark" data-student="${student}" data-sub="${sub}" style="font-size:11px;">--</td>
+                    `;
+                });
+                html += `</tr>`;
+            });
+
+            html += `</tbody></table></div>
+
+                    <!-- Signatures -->
+                    <div class="section-title" style="margin-top:20px;">✍️ Signatures</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:30px; margin-top:15px;">
+                        <div><p style="font-weight:700; color:#1e293b;">Class Teacher</p><div style="border-bottom:2px solid #1e293b; margin-top:30px; width:100%;"></div><p style="font-size:12px; color:#64748b; margin-top:4px;">Name & Signature</p></div>
+                        <div><p style="font-weight:700; color:#1e293b;">Principal</p><div style="border-bottom:2px solid #1e293b; margin-top:30px; width:100%;"></div><p style="font-size:12px; color:#64748b; margin-top:4px;">Name & Signature</p></div>
+                        <div><p style="font-weight:700; color:#1e293b;">Parent/Guardian</p><div style="border-bottom:2px solid #1e293b; margin-top:30px; width:100%;"></div><p style="font-size:12px; color:#64748b; margin-top:4px;">Name & Signature</p></div>
+                    </div>
+                </div>
+            `;
+
+            area.innerHTML = html;
+
+            // Attach recalculate to ALL input fields (including exam inputs)
+            document.querySelectorAll('#reportBuilderArea input[type="number"]').forEach(input => {
+                input.addEventListener('change', () => {
+                    recalculateRow(input);
+                });
+                input.addEventListener('input', () => {
+                    recalculateRow(input);
+                });
+            });
+
+            // Initial calculation
+            document.querySelectorAll('#reportBuilderArea input[type="number"]').forEach(input => {
+                recalculateRow(input);
+            });
+
+            showToast(`✅ Loaded ${reportStudents.length} students and ${currentSubjects.length} subjects.`, 'success');
+
+        } catch (e) {
+            area.innerHTML = `<p style="color:#dc2626;">❌ Error loading students: ${e.message}</p>`;
+            showToast('❌ Error loading data.', 'error');
+        }
+    });
+
+    // =============================================================
+    // RECALCULATE A SINGLE ROW (UPDATED for Editable Exam)
+    // =============================================================
+    function recalculateRow(input) {
+        const student = input.dataset.student;
+        const subject = input.dataset.sub;
+        if (!student || !subject) return;
+
+        const row = input.closest('tr');
+        if (!row) return;
+
+        const firstInput = row.querySelector(`.rep-first[data-student="${student}"][data-sub="${subject}"]`);
+        const secondInput = row.querySelector(`.rep-second[data-student="${student}"][data-sub="${subject}"]`);
+        const caInput = row.querySelector(`.rep-ca[data-student="${student}"][data-sub="${subject}"]`);
+        const examInput = row.querySelector(`.rep-exam-input[data-student="${student}"][data-sub="${subject}"]`);
+        const thirdTotalCell = row.querySelector(`.rep-third-total[data-student="${student}"][data-sub="${subject}"]`);
+        const cumTotalCell = row.querySelector(`.rep-cum-total[data-student="${student}"][data-sub="${subject}"]`);
+        const gradeCell = row.querySelector(`.rep-grade[data-student="${student}"][data-sub="${subject}"]`);
+        const remarkCell = row.querySelector(`.rep-remark[data-student="${student}"][data-sub="${subject}"]`);
+
+        if (!firstInput || !secondInput || !caInput || !examInput) return;
+
+        const first = parseFloat(firstInput.value) || 0;
+        const second = parseFloat(secondInput.value) || 0;
+        const ca = parseFloat(caInput.value) || 0;
+        const exam = parseFloat(examInput.value) || 0; // Use the editable exam input
+
+        const thirdTotal = ca + exam;
+        const cumTotal = first + second + thirdTotal;
+
+        thirdTotalCell.innerText = thirdTotal;
+        cumTotalCell.innerText = cumTotal;
+
+        let grade = '', remark = '';
+        if (cumTotal > 0) {
+            const avg = cumTotal / 3;
+            if (avg >= 70) { grade = 'A'; remark = 'Excellent'; }
+            else if (avg >= 60) { grade = 'B'; remark = 'Good'; }
+            else if (avg >= 50) { grade = 'C'; remark = 'Satisfactory'; }
+            else if (avg >= 40) { grade = 'D'; remark = 'Pass'; }
+            else { grade = 'F'; remark = 'Needs Improvement'; }
+        }
+
+        gradeCell.innerText = grade;
+        remarkCell.innerText = remark;
+    }
+
+    // =============================================================
+    // AUTO-CALCULATE ALL
+    // =============================================================
+    $('calcAllBtn').addEventListener('click', async () => {
+        const inputs = document.querySelectorAll('#reportBuilderArea input[type="number"]');
+        inputs.forEach(input => recalculateRow(input));
+        showToast('✅ All calculations updated!', 'success');
+    });
+
+    // =============================================================
+    // PUSH TO ADMIN (UPDATED to save editable exam scores)
+    // =============================================================
+    $('pushAdminBtn').addEventListener('click', async () => {
+        if (!confirm('📤 Push all report cards to Admin for approval?')) return;
+
+        const cls = currentUser.class;
+        const schoolName = document.getElementById('reportSchoolName')?.value || 'JUDAH WONDERS MODEL SCHOOL';
+        const teacherName = document.getElementById('reportTeacherName')?.value || currentUser.name;
+        const term = document.getElementById('reportTerm')?.value || 'Third Term';
+        const session = document.getElementById('reportSession')?.value || new Date().getFullYear().toString();
+        const date = document.getElementById('reportDate')?.value || new Date().toISOString().slice(0, 10);
+        const resumption = document.getElementById('reportResumption')?.value || '';
+        const closing = document.getElementById('reportClosing')?.value || '';
+        const nextTerm = document.getElementById('reportNextTerm')?.value || '';
+        const daysOpen = parseInt(document.getElementById('reportDaysOpen')?.value) || 90;
+        const daysPresent = parseInt(document.getElementById('reportDaysPresent')?.value) || 85;
+        const daysAbsent = parseInt(document.getElementById('reportDaysAbsent')?.value) || 5;
+        const commentary = document.getElementById('reportCommentary')?.value || '';
+
+        // Get qualities
+        const qualitySelects = document.querySelectorAll('.quality-select');
+        const qualities = {};
+        qualitySelects.forEach(sel => {
+            const label = sel.closest('.quality-item').querySelector('label').innerText;
+            qualities[label] = parseInt(sel.value) || 3;
+        });
+
+        // Get extracurriculars
+        const extracurricularChecks = document.querySelectorAll('.extracurricular-check:checked');
+        const extracurriculars = Array.from(extracurricularChecks).map(cb => cb.value);
+
+        try {
+            for (let student of reportStudents) {
+                const subjectsData = {};
+                let studentHasData = false;
+
+                const firstInputs = document.querySelectorAll(`.rep-first[data-student="${student}"]`);
+                firstInputs.forEach(input => {
+                    const sub = input.dataset.sub;
+                    const first = parseFloat(input.value) || 0;
+                    const second = parseFloat(document.querySelector(`.rep-second[data-student="${student}"][data-sub="${sub}"]`)?.value) || 0;
+                    const ca = parseFloat(document.querySelector(`.rep-ca[data-student="${student}"][data-sub="${sub}"]`)?.value) || 0;
+                    // Save the edited exam score
+                    const examInput = document.querySelector(`.rep-exam-input[data-student="${student}"][data-sub="${sub}"]`);
+                    const exam = examInput ? parseFloat(examInput.value) || 0 : 0;
+                    
+                    if (first > 0 || second > 0 || ca > 0 || exam > 0) {
+                        studentHasData = true;
+                    }
+                    
+                    subjectsData[sub] = { firstTerm: first, secondTerm: second, thirdCA: ca, thirdExam: exam };
+                });
+
+                if (!studentHasData) continue;
+
+                const reportCardData = {
+                    class: cls,
+                    studentName: student,
+                    term: term,
+                    year: parseInt(session) || new Date().getFullYear(),
+                    schoolName: schoolName,
+                    teacherName: teacherName,
+                    date: date,
+                    resumptionDate: resumption,
+                    closingDate: closing,
+                    nextTermResumption: nextTerm,
+                    attendance: { open: daysOpen, present: daysPresent, absent: daysAbsent },
+                    subjects: subjectsData,
+                    qualities: qualities,
+                    extracurriculars: extracurriculars,
+                    commentary: commentary,
+                    approved: false,
+                    pin: null,
+                    pushedAt: new Date()
+                };
+
+                await db.collection('reportCards').doc(`${cls}_${student}`).set(reportCardData, { merge: true });
+            }
+
+            showToast(`✅ Report cards pushed to Admin for ${reportStudents.length} students!`, 'success');
+        } catch (e) {
+            showToast('❌ Error pushing to Admin: ' + e.message, 'error');
+        }
+    });
+
+    // =============================================================
+    // TAB SWITCHING
+    // =============================================================
+    document.querySelectorAll('.main-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(tab.dataset.tab).classList.add('active');
+            if (tab.dataset.tab === 'tabPublish') {
+                loadSchedule(currentUser.class);
+            }
+        });
+    });
+
+    // =============================================================
+    // INIT
+    // =============================================================
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    $('loginPage').classList.add('active');
+    loadMasterClassList();
+    console.log('✅ JUDAH WONDERS MODEL SCHOOL — Teacher Dashboard with Bulk CSV Paste & Editable Exam Scores is ready!');
+</script>
+</body>
+</html>
