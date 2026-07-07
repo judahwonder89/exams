@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JUDAH WONDERS - Admin Console</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <!-- Firebase v10 compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #app {
+            width: 100%;
+            max-width: 1300px;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
+            padding: 40px;
+            overflow: hidden;
+            position: relative;
+        }
+        .page { display: none; animation: fadeIn 0.3s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* TOAST */
+        .toast-container {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-width: 400px;
+            width: 100%;
+            pointer-events: none;
+        }
+        .toast {
+            background: white;
+            padding: 16px 24px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px -8px rgba(0,0,0,0.12);
+            border-left: 6px solid #4f46e5;
+            pointer-events: auto;
+            animation: slideIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #0f172a;
+        }
+        .toast.hide { animation: slideOut 0.3s ease forwards; }
+        .toast .icon { font-size: 22px; }
+        .toast.success { border-color: #10b981; }
+        .toast.error { border-color: #dc2626; }
+        .toast.warning { border-color: #f59e0b; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(60px); } }
+
+        /* LOGIN */
+        .login-box { max-width: 420px; margin: 20px auto; padding: 30px 0; }
+        .login-box h2 { font-size: 28px; color: #1e1b4b; }
+        .login-box p { color: #64748b; margin-bottom: 20px; }
+        .login-box input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 60px;
+            font-size: 15px;
+            margin-bottom: 12px;
+            background: #f8fafc;
+            outline: none;
+            transition: 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .login-box input:focus { border-color: #4f46e5; background: white; }
+        .login-box button {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(to right, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            border-radius: 60px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .login-box button:hover { transform: scale(1.02); box-shadow: 0 10px 25px rgba(79,70,229,0.3); }
+        .login-error { color: #dc2626; font-weight: 600; margin-top: 10px; }
+
+        /* DASHBOARD */
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+        }
+        .admin-header h1 { font-size: 28px; color: #1e1b4b; }
+        .admin-header h1 span { color: #4f46e5; }
+        .admin-header .logout-btn {
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 60px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: 0.2s;
+        }
+        .admin-header .logout-btn:hover { background: #fecaca; }
+
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 25px; }
+        @media (max-width: 1100px) { .grid-3 { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 700px) { .grid-3 { grid-template-columns: 1fr; } }
+
+        .card {
+            background: #f8fafc;
+            border-radius: 24px;
+            padding: 25px;
+            border: 1px solid #e2e8f0;
+        }
+        .card h3 { font-weight: 800; color: #1e1b4b; margin-bottom: 12px; }
+        .card .sub { color: #64748b; font-size: 14px; margin-bottom: 15px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 8px 10px; border: 1px solid #e2e8f0; text-align: center; }
+        th { background: white; font-weight: 700; }
+
+        .btn-sm {
+            padding: 6px 16px;
+            border: none;
+            border-radius: 60px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-primary { background: #4f46e5; color: white; }
+        .btn-primary:hover { background: #4338ca; }
+        .btn-danger { background: #dc2626; color: white; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-warning { background: #f59e0b; color: #1e1b4b; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-outline { background: white; border: 2px solid #e2e8f0; }
+
+        .flex-input { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; align-items: center; }
+        .flex-input input, .flex-input select {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 60px;
+            font-size: 14px;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            background: white;
+        }
+        .flex-input input:focus, .flex-input select:focus { border-color: #4f46e5; }
+
+        .pin-display-box {
+            background: white;
+            border-radius: 16px;
+            padding: 15px;
+            text-align: center;
+            border: 2px dashed #4f46e5;
+            margin-top: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .pin-display-box .pin-value {
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #1e1b4b;
+            display: inline-block;
+            background: #f1f5f9;
+            padding: 4px 12px;
+            border-radius: 30px;
+            margin: 3px;
+        }
+        .pin-display-box .pin-label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .table-scroll { max-height: 200px; overflow-y: auto; margin-top: 10px; }
+        .table-scroll table { font-size: 12px; }
+        .table-scroll th { position: sticky; top: 0; background: #f1f5f9; z-index: 2; }
+
+        /* Class Droplet */
+        .class-droplet {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 60px;
+            border: 1px solid #e2e8f0;
+            font-weight: 600;
+            margin: 4px 8px 4px 0;
+        }
+        .class-droplet .del-class {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 16px;
+            padding: 0 4px;
+        }
+        .class-droplet .del-class:hover { color: #dc2626; }
+        .droplet-container { display: flex; flex-wrap: wrap; padding: 10px 0; }
+        .add-class-row { display: flex; gap: 10px; margin-top: 10px; }
+        .add-class-row input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 60px;
+            font-size: 14px;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            background: white;
+        }
+        .add-class-row input:focus { border-color: #4f46e5; }
+        .add-class-row button {
+            padding: 12px 24px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 60px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: 0.2s;
+        }
+        .add-class-row button:hover { background: #059669; }
+
+        /* MODAL */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-box {
+            background: white;
+            border-radius: 32px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 35px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+        }
+        .modal-box h2 { color: #1e1b4b; margin-bottom: 6px; }
+        .modal-box .sub { color: #64748b; margin-bottom: 20px; }
+        .modal-box .close-modal {
+            float: right;
+            background: transparent;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #94a3b8;
+        }
+        .modal-box .close-modal:hover { color: #dc2626; }
+        .modal-box .student-info {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 16px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .modal-box .student-info strong { color: #1e1b4b; }
+        .modal-box .subject-summary { font-size: 13px; }
+        .modal-box .subject-summary table { width: 100%; }
+        .modal-box .remark-field { margin-top: 15px; }
+        .modal-box .remark-field textarea {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+            outline: none;
+        }
+        .modal-box .remark-field textarea:focus { border-color: #4f46e5; }
+        .modal-box .consent-check {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 15px 0;
+            font-weight: 600;
+        }
+        .modal-box .consent-check input { width: 20px; height: 20px; accent-color: #4f46e5; }
+        .modal-box .actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- LOGIN -->
+    <div id="loginPage" class="page active">
+        <div class="login-box">
+            <h2>🔑 JUDAH WONDERS · Admin</h2>
+            <p>Enter your Admin PIN to manage the school system.</p>
+            <input id="adminName" placeholder="👤 Admin Name" value="Administrator" />
+            <input id="adminPin" placeholder="🔐 Admin PIN" type="password" />
+            <button id="loginBtn">🚀 Enter Console</button>
+            <p id="loginErr" class="login-error"></p>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboardPage" class="page">
+        <div class="admin-header">
+            <h1>🔑 <span>Admin</span> Console</h1>
+            <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
+        </div>
+
+        <div class="grid-3">
+            <!-- Card 1: Pending Approvals -->
+            <div class="card">
+                <h3>⏳ Pending Approvals</h3>
+                <div class="sub">Review, add remarks & consent, then approve.</div>
+                <div id="pendingList">Loading...</div>
+            </div>
+
+            <!-- Card 2: Generate Bulk PINs -->
+            <div class="card">
+                <h3>🔐 Generate Bulk PINs</h3>
+                <div class="sub">Generate 10 to 60 unique PINs at once.</div>
+                <div class="flex-input">
+                    <input id="pinCount" type="number" min="1" max="60" value="20" style="flex:0 0 80px; text-align:center;" />
+                    <button class="btn-sm btn-primary" id="genBulkPinBtn" style="padding:12px 20px; flex:1;">🔄 Generate</button>
+                </div>
+                <div class="pin-display-box" id="bulkPinResult">
+                    <span class="pin-label">✨ Generated PINs</span>
+                    <div id="pinListContainer"><span style="color:#94a3b8;">No PINs generated yet.</span></div>
+                </div>
+                <button class="btn-sm btn-outline" id="copyPinsBtn" style="margin-top:8px; width:100%;">📋 Copy All to Clipboard</button>
+            </div>
+
+            <!-- Card 3: PIN Usage History -->
+            <div class="card">
+                <h3>📜 PIN Usage History</h3>
+                <div class="sub">Track who used which PIN and when.</div>
+                <button class="btn-sm btn-primary" id="refreshHistoryBtn" style="margin-bottom:10px;">🔄 Refresh History</button>
+                <div class="table-scroll" id="pinHistoryContainer">
+                    <p style="color:#94a3b8; font-size:14px;">Loading history...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Full Width: Class Droplets Manager -->
+        <div class="card" style="margin-top:25px;">
+            <h3>📚 Manage Classes (Droplets)</h3>
+            <div class="sub">Add or remove standardized classes. Students and teachers will select from this list.</div>
+            <div class="add-class-row">
+                <input id="newClassInput" placeholder="e.g. Basic 7" />
+                <button id="addClassBtn">➕ Add Class</button>
+            </div>
+            <div id="classDropletContainer" class="droplet-container">
+                <span style="color:#94a3b8; font-size:14px;">Loading classes...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: Review & Approve Report Card ===== -->
+    <div class="modal-overlay" id="reviewModal">
+        <div class="modal-box">
+            <button class="close-modal" id="closeModalBtn">✕</button>
+            <h2>📋 Review Report Card</h2>
+            <p class="sub">Review the student's performance, add your remarks, and give consent before publishing.</p>
+
+            <div class="student-info" id="modalStudentInfo">
+                <div><strong>Student:</strong> <span id="modalStudentName">---</span></div>
+                <div><strong>Class:</strong> <span id="modalStudentClass">---</span></div>
+                <div><strong>Term:</strong> <span id="modalStudentTerm">Third Term</span></div>
+            </div>
+
+            <div class="subject-summary" id="modalSubjectSummary"></div>
+
+            <div class="remark-field">
+                <label style="font-weight:700; color:#1e1b4b; display:block; margin-bottom:4px;">📝 Admin / Principal Remarks</label>
+                <textarea id="adminRemarksInput" placeholder="Enter your official remarks..."></textarea>
+            </div>
+
+            <div class="consent-check">
+                <input type="checkbox" id="adminConsentCheck" />
+                <label for="adminConsentCheck">✅ I have reviewed this report card and give my full consent for publication.</label>
+            </div>
+
+            <div class="actions">
+                <button class="btn-sm btn-outline" id="cancelReviewBtn">Cancel</button>
+                <button class="btn-sm btn-success" id="finalizeApprovalBtn">📤 Approve & Publish</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // =============================================================
+    // FIREBASE CONFIG — JUDAH WONDERS
+    // =============================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyAqayttjbGIy2WDsL_x6guPLVnfiNUKmyc",
+        authDomain: "judahexam.firebaseapp.com",
+        projectId: "judahexam",
+        storageBucket: "judahexam.firebasestorage.app",
+        messagingSenderId: "451288402445",
+        appId: "1:451288402445:web:d113278acec9dc52c26344",
+        measurementId: "G-GG4E5P8K7Z"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    auth.signInAnonymously().catch(e => console.error(e));
+
+    // =============================================================
+    // TOAST
+    // =============================================================
+    function showToast(message, type = "success") {
+        const container = document.getElementById('toastContainer');
+        const icons = { success: '✅', error: '❌', warning: '⚠️' };
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<span class="icon">${icons[type] || '📢'}</span> ${message}`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('hide');
+            setTimeout(() => toast.remove(), 400);
+        }, 4000);
+    }
+
+    // =============================================================
+    // HELPERS & GLOBALS
+    // =============================================================
+    const $ = (id) => document.getElementById(id);
+    let masterClassList = [];
+    let currentPendingDocId = null;
+
+    // =============================================================
+    // LOGIN
+    // =============================================================
+    $('loginBtn').addEventListener('click', async () => {
+        const name = $('adminName').value.trim();
+        const pin = $('adminPin').value.trim();
+        const err = $('loginErr');
+        if (!pin) return err.innerText = '⚠️ Please enter the Admin PIN.';
+
+        try {
+            const settingsDoc = await db.collection('settings').doc('adminConfig').get();
+            let storedPin = 'admin123';
+            if (settingsDoc.exists) storedPin = settingsDoc.data().pin || 'admin123';
+
+            if (pin === storedPin) {
+                err.innerText = '';
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                $('dashboardPage').classList.add('active');
+                showToast(`👑 Welcome, ${name || 'Admin'}!`, 'success');
+                loadPendingReports();
+                loadMasterClassList();
+                loadPinHistory();
+            } else {
+                err.innerText = '❌ Invalid Admin PIN.';
+            }
+        } catch (e) {
+            if (pin === 'admin123') {
+                err.innerText = '';
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                $('dashboardPage').classList.add('active');
+                showToast('👑 Welcome Admin! (Fallback mode)', 'success');
+                loadPendingReports();
+                loadMasterClassList();
+                loadPinHistory();
+            } else {
+                err.innerText = '❌ Invalid Admin PIN. (Fallback: admin123)';
+            }
+        }
+    });
+
+    $('logoutBtn').addEventListener('click', () => {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        $('loginPage').classList.add('active');
+        showToast('👋 Logged out.', 'warning');
+    });
+
+    // =============================================================
+    // 1. MASTER CLASS LIST (DROPLETS)
+    // =============================================================
+    async function loadMasterClassList() {
+        try {
+            const doc = await db.collection('classList').doc('allClasses').get();
+            if (doc.exists) {
+                masterClassList = doc.data().classes || [];
+            } else {
+                masterClassList = ['Nursery 1', 'Nursery 2', 'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5', 'Basic 6'];
+                await db.collection('classList').doc('allClasses').set({ classes: masterClassList });
+            }
+            renderDroplets();
+        } catch (e) {
+            showToast('❌ Error loading master class list: ' + e.message, 'error');
+        }
+    }
+
+    function renderDroplets() {
+        const container = $('classDropletContainer');
+        if (!masterClassList.length) {
+            container.innerHTML = '<span style="color:#94a3b8; font-size:14px;">No classes added yet. Add one above!</span>';
+            return;
+        }
+        container.innerHTML = masterClassList.map(cls => `
+            <span class="class-droplet">
+                📘 ${cls}
+                <button class="del-class" data-class="${cls}">✕</button>
+            </span>
+        `).join('');
+
+        container.querySelectorAll('.del-class').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const cls = btn.dataset.class;
+                if (!confirm(`Remove "${cls}" from the master list?`)) return;
+                masterClassList = masterClassList.filter(c => c !== cls);
+                await db.collection('classList').doc('allClasses').update({ classes: masterClassList });
+                renderDroplets();
+                showToast(`🗑️ "${cls}" removed.`, 'warning');
+            });
+        });
+    }
+
+    $('addClassBtn').addEventListener('click', async () => {
+        const val = $('newClassInput').value.trim();
+        if (!val) return showToast('⚠️ Please enter a class name.', 'warning');
+        if (masterClassList.includes(val)) return showToast('⚠️ Class already exists in the list.', 'warning');
+
+        try {
+            masterClassList.push(val);
+            await db.collection('classList').doc('allClasses').update({ classes: masterClassList });
+            $('newClassInput').value = '';
+            renderDroplets();
+            showToast(`✅ "${val}" added to master list!`, 'success');
+        } catch (e) {
+            showToast('❌ Error adding class: ' + e.message, 'error');
+        }
+    });
+
+    // =============================================================
+    // 2. PENDING APPROVALS
+    // =============================================================
+    async function loadPendingReports() {
+        const container = $('pendingList');
+        try {
+            const snap = await db.collection('reportCards')
+                .where('approved', '==', false)
+                .orderBy('pushedAt', 'desc')
+                .get();
+
+            if (snap.empty) return container.innerHTML = '<p style="color:#059669; font-weight:600;">🎉 All clear! No pending reports.</p>';
+
+            let html = '<table><tr><th>Student</th><th>Class</th><th>Pushed</th><th>Action</th></tr>';
+            snap.forEach(doc => {
+                const data = doc.data();
+                const date = data.pushedAt?.toDate?.()?.toLocaleDateString() || 'N/A';
+                html += `<tr>
+                    <td><strong>${data.studentName}</strong></td>
+                    <td>${data.class}</td>
+                    <td>${date}</td>
+                    <td><button class="btn-sm btn-warning reviewBtn" data-id="${doc.id}">📝 Review & Approve</button></td>
+                </tr>`;
+            });
+            container.innerHTML = html + '</table>';
+
+            container.querySelectorAll('.reviewBtn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    openReviewModal(btn.dataset.id);
+                });
+            });
+        } catch (e) {
+            container.innerHTML = '<p style="color:#dc2626;">❌ Error loading pending reports.</p>';
+            showToast('❌ Error loading data.', 'error');
+        }
+    }
+
+    // =============================================================
+    // 3. REVIEW MODAL
+    // =============================================================
+    async function openReviewModal(docId) {
+        currentPendingDocId = docId;
+        try {
+            const doc = await db.collection('reportCards').doc(docId).get();
+            if (!doc.exists) return showToast('❌ Report card not found.', 'error');
+
+            const data = doc.data();
+            $('modalStudentName').innerText = data.studentName;
+            $('modalStudentClass').innerText = data.class;
+            $('modalStudentTerm').innerText = data.term || 'Third Term';
+
+            const subjects = Object.keys(data.subjects);
+            let tableHtml = `<table><tr><th>Subject</th><th>1st</th><th>2nd</th><th>CA</th><th>Exam</th><th>Total</th></tr>`;
+            subjects.forEach(sub => {
+                const s = data.subjects[sub];
+                const total = (s.thirdCA || 0) + (s.thirdExam || 0);
+                tableHtml += `<tr><td><strong>${sub}</strong></td><td>${s.firstTerm||0}</td><td>${s.secondTerm||0}</td><td>${s.thirdCA||0}</td><td>${s.thirdExam||0}</td><td>${total}</td></tr>`;
+            });
+            tableHtml += '</table>';
+            $('modalSubjectSummary').innerHTML = tableHtml;
+
+            $('adminRemarksInput').value = '';
+            $('adminConsentCheck').checked = false;
+
+            $('reviewModal').classList.add('active');
+        } catch (e) {
+            showToast('❌ Error loading report data.', 'error');
+        }
+    }
+
+    function closeReviewModal() {
+        $('reviewModal').classList.remove('active');
+        currentPendingDocId = null;
+    }
+
+    $('closeModalBtn').addEventListener('click', closeReviewModal);
+    $('cancelReviewBtn').addEventListener('click', closeReviewModal);
+    $('reviewModal').addEventListener('click', (e) => {
+        if (e.target === $('reviewModal')) closeReviewModal();
+    });
+
+    // =============================================================
+    // 4. FINALIZE APPROVAL
+    // =============================================================
+    $('finalizeApprovalBtn').addEventListener('click', async () => {
+        if (!currentPendingDocId) return showToast('⚠️ No report selected.', 'error');
+
+        const remarks = $('adminRemarksInput').value.trim();
+        const consent = $('adminConsentCheck').checked;
+
+        if (!consent) {
+            return showToast('⚠️ You must check the consent box to approve this report.', 'warning');
+        }
+
+        if (!remarks) {
+            if (!confirm('⚠️ You haven\'t added any admin remarks. Continue anyway?')) return;
+        }
+
+        try {
+            await db.collection('reportCards').doc(currentPendingDocId).update({
+                approved: true,
+                adminRemarks: remarks || 'No additional remarks provided.',
+                adminConsent: true,
+                approvedAt: new Date()
+            });
+
+            showToast('✅ Report card approved and published!', 'success');
+            closeReviewModal();
+            loadPendingReports();
+        } catch (e) {
+            showToast('❌ Error approving report: ' + e.message, 'error');
+        }
+    });
+
+    // =============================================================
+    // 5. BULK PIN GENERATION
+    // =============================================================
+    $('genBulkPinBtn').addEventListener('click', async () => {
+        const count = parseInt($('pinCount').value) || 20;
+        if (count < 1 || count > 60) {
+            return showToast('⚠️ Please enter a number between 1 and 60.', 'warning');
+        }
+
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%&';
+        const generatedPins = [];
+        const batch = db.batch();
+        let attempts = 0;
+        const maxAttempts = count * 10;
+
+        while (generatedPins.length < count && attempts < maxAttempts) {
+            attempts++;
+            let pin = '';
+            for (let i = 0; i < 8; i++) pin += chars[Math.floor(Math.random() * chars.length)];
+
+            const check = await db.collection('pins').doc(pin).get();
+            if (!check.exists && !generatedPins.includes(pin)) {
+                generatedPins.push(pin);
+                const ref = db.collection('pins').doc(pin);
+                batch.set(ref, {
+                    used: false,
+                    usedBy: null,
+                    usedAt: null,
+                    createdAt: new Date()
+                });
+            }
+        }
+
+        if (generatedPins.length < count) {
+            showToast(`⚠️ Only generated ${generatedPins.length} unique PINs. Please try again.`, 'warning');
+        }
+
+        try {
+            await batch.commit();
+            const container = $('pinListContainer');
+            container.innerHTML = generatedPins.map(p => `<span class="pin-value">${p}</span>`).join(' ');
+            showToast(`✅ ${generatedPins.length} PINs generated successfully!`, 'success');
+            $('bulkPinResult').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (e) {
+            showToast('❌ Error saving PINs: ' + e.message, 'error');
+        }
+    });
+
+    $('copyPinsBtn').addEventListener('click', () => {
+        const pinSpans = document.querySelectorAll('#pinListContainer .pin-value');
+        if (!pinSpans.length) return showToast('⚠️ No PINs to copy.', 'warning');
+        const pins = Array.from(pinSpans).map(el => el.innerText).join('\n');
+        navigator.clipboard.writeText(pins).then(() => {
+            showToast('📋 PINs copied to clipboard!', 'success');
+        }).catch(() => {
+            const textarea = document.createElement('textarea');
+            textarea.value = pins;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast('📋 PINs copied!', 'success');
+        });
+    });
+
+    // =============================================================
+    // 6. PIN USAGE HISTORY
+    // =============================================================
+    async function loadPinHistory() {
+        const container = $('pinHistoryContainer');
+        try {
+            const snap = await db.collection('pins')
+                .where('used', '==', true)
+                .orderBy('usedAt', 'desc')
+                .get();
+
+            if (snap.empty) {
+                container.innerHTML = '<p style="color:#94a3b8; font-size:14px;">No PINs have been used yet.</p>';
+                return;
+            }
+
+            let html = `<table><tr><th>PIN</th><th>Used By</th><th>Class</th><th>Used At</th></tr>`;
+            snap.forEach(doc => {
+                const data = doc.data();
+                const date = data.usedAt?.toDate?.()?.toLocaleString() || 'N/A';
+                html += `<tr><td><strong>${doc.id}</strong></td><td>${data.usedBy || 'N/A'}</td><td>${data.class || 'N/A'}</td><td>${date}</td></tr>`;
+            });
+            container.innerHTML = html + '</table>';
+        } catch (e) {
+            container.innerHTML = '<p style="color:#dc2626;">❌ Error loading history.</p>';
+            showToast('❌ Error loading PIN history.', 'error');
+        }
+    }
+
+    $('refreshHistoryBtn').addEventListener('click', () => {
+        loadPinHistory();
+        showToast('🔄 History refreshed.', 'success');
+    });
+
+    // =============================================================
+    // INIT
+    // =============================================================
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    $('loginPage').classList.add('active');
+    console.log('🔐 JUDAH WONDERS MODEL SCHOOL — Admin Console ready.');
+</script>
+</body>
+</html>
