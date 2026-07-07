@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JUDAH WONDERS · Report Card</title>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <style>
+        /* ===== GLOBAL RESET ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 30px 20px;
+        }
+
+        #app {
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        /* ===== TOAST NOTIFICATIONS ===== */
+        .toast-container {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-width: 400px;
+            width: 100%;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: white;
+            padding: 16px 24px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.12);
+            border-left: 6px solid #4f46e5;
+            pointer-events: auto;
+            animation: slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #0f172a;
+        }
+
+        .toast.hide {
+            animation: slideOut 0.3s ease forwards;
+        }
+
+        .toast .icon {
+            font-size: 22px;
+        }
+
+        .toast.success {
+            border-color: #10b981;
+        }
+        .toast.error {
+            border-color: #dc2626;
+        }
+        .toast.warning {
+            border-color: #f59e0b;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(60px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(60px);
+            }
+        }
+
+        /* ===== LOGIN CARD ===== */
+        .login-card {
+            background: white;
+            padding: 40px 35px;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            max-width: 520px;
+            margin: 40px auto;
+            border: 1px solid #e2e8f0;
+        }
+
+        .login-card h2 {
+            color: #1e1b4b;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .login-card p {
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+
+        .login-card .flex {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .login-card input,
+        .login-card select {
+            flex: 1;
+            min-width: 160px;
+            padding: 14px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 60px;
+            font-size: 15px;
+            outline: none;
+            transition: 0.2s;
+            background: #f8fafc;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .login-card input:focus,
+        .login-card select:focus {
+            border-color: #b8860b;
+            background: white;
+        }
+
+        .login-card button {
+            font-family: 'Inter', sans-serif;
+            font-weight: 800;
+            padding: 14px 40px;
+            background: linear-gradient(to right, #b8860b, #8a2be2);
+            color: white;
+            border: none;
+            border-radius: 60px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+            flex: 1;
+        }
+
+        .login-card button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 20px rgba(184, 134, 11, 0.25);
+        }
+
+        .error-text {
+            color: #dc2626;
+            font-weight: 700;
+            margin-top: 12px;
+        }
+
+        .status-text {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 8px;
+        }
+
+        /* ========================================================== */
+        /* ===== REPORT CARD (A4 TRADITIONAL STYLING) ===== */
+        /* ========================================================== */
+        .report-wrapper {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06);
+            padding: 40px 35px;
+            margin-top: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .report-card {
+            max-width: 210mm;
+            margin: 0 auto;
+            background: white;
+            padding: 8px 0;
+            font-family: 'Inter', sans-serif;
+            color: #0f172a;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ----- WATERMARK (JWMS + Logo) ----- */
+        .watermark-container {
+            display: none;
+        }
+
+        /* ----- School Header with Logo Top Right ----- */
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px double #1e1b4b;
+            padding-bottom: 18px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .report-header .left {
+            flex: 1;
+        }
+
+        .report-header .school-name {
+            font-size: 28px;
+            font-weight: 900;
+            color: #1e1b4b;
+            letter-spacing: 2px;
+        }
+
+        .report-header .motto {
+            font-weight: 600;
+            color: #b8860b;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        .report-header .location {
+            font-size: 12px;
+            color: #475569;
+            font-weight: 500;
+        }
+
+        .report-header .term-info {
+            font-size: 16px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-top: 4px;
+            background: #fef9e7;
+            display: inline-block;
+            padding: 2px 24px;
+            border-radius: 30px;
+            border: 1px solid #fde68a;
+        }
+
+        .report-header .logo-right {
+            flex: 0 0 auto;
+            margin-left: 20px;
+            text-align: right;
+        }
+
+        .report-header .logo-right img {
+            max-height: 70px;
+            width: auto;
+            border-radius: 12px;
+            background: white;
+            padding: 4px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .report-header .logo-right .watermark-text {
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 700;
+            margin-top: 2px;
+            letter-spacing: 2px;
+        }
+
+        /* ----- Student Info & Attendance ----- */
+        .student-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .student-meta .name {
+            font-size: 18px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .student-meta .name span {
+            color: #b8860b;
+        }
+
+        .student-meta .class {
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .student-meta .teacher {
+            font-weight: 600;
+            color: #475569;
+            font-size: 14px;
+        }
+
+        .attendance-grid {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            font-weight: 600;
+            font-size: 14px;
+            color: #334155;
+        }
+
+        .attendance-grid span {
+            background: white;
+            padding: 4px 14px;
+            border-radius: 40px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* ----- School Dates Row ----- */
+        .dates-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-between;
+            background: #f8fafc;
+            padding: 8px 16px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #e2e8f0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            position: relative;
+            z-index: 1;
+        }
+
+        .dates-row span {
+            background: white;
+            padding: 2px 12px;
+            border-radius: 30px;
+        }
+
+        .dates-row strong {
+            color: #1e1b4b;
+        }
+
+        /* ----- Qualities & Extracurriculars Grid ----- */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .info-grid .box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .info-grid .box h4 {
+            font-weight: 700;
+            color: #1e1b4b;
+            margin-bottom: 8px;
+            font-size: 14px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
+        }
+
+        .info-grid .box .item {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .info-grid .box .item .rating {
+            background: #fef9e7;
+            padding: 0 10px;
+            border-radius: 30px;
+            color: #7a4b0e;
+            font-weight: 700;
+        }
+
+        .extra-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .extra-badges .badge {
+            background: #fef9e7;
+            color: #7a4b0e;
+            padding: 2px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #fde68a;
+        }
+
+        .extra-badges .badge.missing {
+            background: #f1f5f9;
+            color: #94a3b8;
+            border-color: #e2e8f0;
+        }
+
+        /* ----- Main Subject Table (Full Grid) ----- */
+        .table-wrap {
+            overflow-x: auto;
+            margin: 15px 0 10px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        table th {
+            background: #1e1b4b;
+            color: white;
+            font-weight: 700;
+            padding: 10px 6px;
+            border: 1px solid #1e1b4b;
+        }
+
+        table td {
+            padding: 8px 4px;
+            border: 1px solid #cbd5e1;
+            vertical-align: middle;
+        }
+
+        table tr:nth-child(even) {
+            background: #fafafa;
+        }
+
+        table tr:hover {
+            background: #f1f5f9;
+        }
+
+        /* Subject column left-aligned */
+        table td:first-child,
+        table th:first-child {
+            font-weight: 700;
+        }
+
+        table td:nth-child(2) {
+            text-align: left;
+            font-weight: 600;
+            padding-left: 12px;
+        }
+
+        .sub-header th {
+            background: #334155;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 6px 2px;
+        }
+
+        .grade-a {
+            color: #059669;
+            font-weight: 800;
+        }
+        .grade-b {
+            color: #2563eb;
+            font-weight: 800;
+        }
+        .grade-c {
+            color: #d97706;
+            font-weight: 800;
+        }
+        .grade-d {
+            color: #b45309;
+            font-weight: 800;
+        }
+        .grade-f {
+            color: #dc2626;
+            font-weight: 800;
+        }
+
+        .position-row td {
+            background: #fef9e7;
+            font-weight: 800;
+            font-size: 15px;
+            border-top: 3px solid #b8860b;
+            color: #1e1b4b;
+        }
+
+        .grand-total-row td {
+            background: #f1f5f9;
+            font-weight: 800;
+            font-size: 14px;
+            border-top: 3px solid #1e1b4b;
+            color: #0f172a;
+        }
+
+        /* ----- Teacher's Commentary ----- */
+        .commentary-box {
+            margin: 15px 0 20px 0;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #fafafa;
+            position: relative;
+            z-index: 1;
+        }
+
+        .commentary-box h4 {
+            font-weight: 700;
+            color: #1e1b4b;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .commentary-box p {
+            font-style: italic;
+            color: #1e293b;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* ----- Bottom Signatures ----- */
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px dashed #cbd5e1;
+            position: relative;
+            z-index: 1;
+        }
+
+        .signature-box {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .signature-box .label {
+            font-weight: 700;
+            color: #475569;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .signature-box .line {
+            border-bottom: 2px solid #1e293b;
+            width: 100%;
+            margin-top: 30px;
+            margin-bottom: 4px;
+        }
+
+        .signature-box .sub {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .signature-box.text-right {
+            text-align: right;
+        }
+        .signature-box.text-right .line {
+            margin-left: auto;
+        }
+
+        /* ----- Footer ----- */
+        .report-footer {
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 30px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ========================================================== */
+        /* ===== PRINT STYLES (A4 PERFECT) ===== */
+        /* ========================================================== */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+
+            #app {
+                max-width: 100%;
+                padding: 0;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .report-wrapper {
+                box-shadow: none;
+                border: none;
+                border-radius: 0;
+                padding: 10px 15px;
+                margin: 0;
+            }
+
+            .report-card {
+                max-width: 100%;
+                padding: 0;
+                overflow: visible;
+            }
+
+            /* Watermark with JWMS and Logo */
+            .watermark-container {
+                display: block;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: 0;
+                overflow: hidden;
+                opacity: 0.06;
+            }
+
+            .watermark-container .wm-logo {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-25deg) scale(1.5);
+                max-width: 300px;
+                opacity: 0.5;
+            }
+
+            .watermark-container .wm-text {
+                position: absolute;
+                top: 55%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-25deg);
+                font-size: 120px;
+                font-weight: 900;
+                color: #000;
+                letter-spacing: 15px;
+                white-space: nowrap;
+                font-family: 'Inter', sans-serif;
+                text-transform: uppercase;
+                opacity: 0.15;
+            }
+
+            .report-header,
+            .student-meta,
+            .dates-row,
+            .info-grid,
+            .table-wrap,
+            .commentary-box,
+            .signature-section,
+            .report-footer {
+                position: relative;
+                z-index: 1;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            table th {
+                background: #1e1b4b !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .sub-header th {
+                background: #334155 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .position-row td {
+                background: #fef9e7 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .grand-total-row td {
+                background: #f1f5f9 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .student-meta,
+            .dates-row,
+            .info-grid .box,
+            .commentary-box {
+                background: #f8fafc !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .report-header .term-info {
+                background: #fef9e7 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .extra-badges .badge {
+                background: #fef9e7 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            table {
+                page-break-inside: avoid;
+            }
+
+            .signature-section {
+                page-break-inside: avoid;
+            }
+
+            .report-header .logo-right img {
+                max-height: 60px;
+            }
+        }
+
+        /* ========================================================== */
+        /* ===== UTILITY CLASSES ===== */
+        /* ========================================================== */
+        .page {
+            display: none;
+            animation: fadeUp 0.4s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeUp {
+            0% {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .flex-center {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+
+        .btn-print {
+            font-family: 'Inter', sans-serif;
+            font-weight: 800;
+            padding: 14px 40px;
+            background: #0f172a;
+            color: white;
+            border: none;
+            border-radius: 60px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-print:hover {
+            background: #1e293b;
+            transform: scale(1.02);
+        }
+
+        .btn-back {
+            font-family: 'Inter', sans-serif;
+            font-weight: 800;
+            padding: 14px 40px;
+            background: white;
+            color: #1e293b;
+            border: 2px solid #e2e8f0;
+            border-radius: 60px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-back:hover {
+            border-color: #b8860b;
+            background: #fef9e7;
+        }
+
+        /* Logo placeholder */
+        .logo-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            height: 70px;
+            background: #fef9e7;
+            border-radius: 12px;
+            border: 2px solid #fde68a;
+            font-weight: 800;
+            font-size: 12px;
+            color: #b8860b;
+            text-align: center;
+            line-height: 1.2;
+        }
+        .logo-placeholder img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <!-- TOAST CONTAINER -->
+        <div id="toastContainer" class="toast-container"></div>
+
+        <!-- ========================================================== -->
+        <!-- PAGE 1: LOGIN                                              -->
+        <!-- ========================================================== -->
+        <div id="loginPage" class="page active">
+            <div class="login-card">
+                <h2>📋 Check Report Card</h2>
+                <p>Enter the student's name, select their class, and enter the 8-digit PIN provided by the school.</p>
+                <div class="flex">
+                    <input id="studentName" placeholder="👤 Student Full Name" style="flex:2;" />
+                    <select id="classSelect" style="flex:2;">
+                        <option value="">-- Select Class --</option>
+                    </select>
+                    <input id="studentPin" placeholder="🔑 PIN (e.g. A#3kL9!@)" style="flex:1;" />
+                </div>
+                <button id="checkReportBtn" style="width:100%; margin-top:12px;">🔍 View Report Card</button>
+                <p id="reportErr" class="error-text"></p>
+                <p id="authStatus" class="status-text">⏳ Connecting to server...</p>
+            </div>
+        </div>
+
+        <!-- ========================================================== -->
+        <!-- PAGE 2: REPORT CARD DISPLAY                                -->
+        <!-- ========================================================== -->
+        <div id="reportPage" class="page">
+            <div class="report-wrapper">
+                <!-- Print & Back Buttons (hidden when printing) -->
+                <div class="flex-center no-print" style="margin-bottom:20px;">
+                    <button class="btn-print" onclick="window.print()">🖨️ Print Preview / Download PDF</button>
+                    <button class="btn-back" id="backBtn">⬅ Back to Search</button>
+                </div>
+
+                <!-- ===== THE ACTUAL REPORT CARD ===== -->
+                <div class="report-card" id="reportContainer">
+                    <!-- Dynamically filled by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =============================================================
+        // 🔥 FIREBASE CONFIG — JUDAH WONDERS
+        // =============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAqayttjbGIy2WDsL_x6guPLVnfiNUKmyc",
+            authDomain: "judahexam.firebaseapp.com",
+            projectId: "judahexam",
+            storageBucket: "judahexam.firebasestorage.app",
+            messagingSenderId: "451288402445",
+            appId: "1:451288402445:web:d113278acec9dc52c26344",
+            measurementId: "G-GG4E5P8K7Z"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // =============================================================
+        // TOAST SYSTEM
+        // =============================================================
+        function showToast(message, type = "success") {
+            const container = document.getElementById('toastContainer');
+            const icons = { success: '✅', error: '❌', warning: '⚠️' };
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span class="icon">${icons[type] || '📢'}</span> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.add('hide');
+                setTimeout(() => toast.remove(), 400); }, 4000);
+        }
+
+        // =============================================================
+        // DOM REFS & STATE
+        // =============================================================
+        const $ = (id) => document.getElementById(id);
+        const showPage = (id) => {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            $(id + 'Page').classList.add('active');
+        };
+        let masterClassList = [];
+
+        // =============================================================
+        // 1. AUTHENTICATION
+        // =============================================================
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                $('authStatus').innerHTML = '✅ Connected to server.';
+                console.log('✅ Report viewer authenticated.');
+            } else {
+                $('authStatus').innerHTML = '⏳ Authenticating...';
+                auth.signInAnonymously().catch(e => {
+                    $('authStatus').innerHTML = '❌ Connection error. Please refresh.';
+                    console.error('Auth error:', e);
+                });
+            }
+        });
+
+        function waitForAuth() {
+            return new Promise((resolve) => {
+                if (auth.currentUser) {
+                    resolve(auth.currentUser);
+                    return;
+                }
+                const unsubscribe = auth.onAuthStateChanged(user => {
+                    unsubscribe();
+                    resolve(user);
+                });
+            });
+        }
+
+        // =============================================================
+        // 2. LOAD MASTER CLASS LIST & POPULATE DROPDOWN
+        // =============================================================
+        async function loadMasterClassList() {
+            try {
+                const doc = await db.collection('classList').doc('allClasses').get();
+                if (doc.exists) {
+                    masterClassList = doc.data().classes || [];
+                } else {
+                    masterClassList = ['Nursery 1', 'Nursery 2', 'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5',
+                        'Basic 6'
+                    ];
+                }
+                populateClassDropdown();
+            } catch (e) {
+                console.error("Error loading master class list:", e);
+                masterClassList = ['Nursery 1', 'Nursery 2', 'Basic 1', 'Basic 2', 'Basic 3', 'Basic 4', 'Basic 5',
+                    'Basic 6'
+                ];
+                populateClassDropdown();
+            }
+        }
+
+        function populateClassDropdown() {
+            const select = $('classSelect');
+            select.innerHTML = '<option value="">-- Select Class --</option>';
+            masterClassList.forEach(cls => {
+                select.innerHTML += `<option value="${cls}">${cls}</option>`;
+            });
+            $('authStatus').innerHTML = '✅ Ready. Enter details to view report.';
+        }
+
+        // =============================================================
+        // 3. CHECK REPORT LOGIC (Claims PIN on First Use)
+        // =============================================================
+        $('checkReportBtn').addEventListener('click', async () => {
+            const name = $('studentName').value.trim();
+            const cls = $('classSelect').value;
+            const pin = $('studentPin').value.trim();
+            const err = $('reportErr');
+
+            if (!name) {
+                err.innerText = '⚠️ Please enter the student\'s name.';
+                return;
+            }
+            if (!cls) {
+                err.innerText = '⚠️ Please select the student\'s class.';
+                return;
+            }
+            if (!pin) {
+                err.innerText = '⚠️ Please enter the PIN.';
+                return;
+            }
+
+            err.innerText = '';
+            $('checkReportBtn').innerText = '⏳ Searching...';
+            $('checkReportBtn').disabled = true;
+
+            try {
+                const user = await waitForAuth();
+                if (!user) {
+                    err.innerText = '⚠️ Network error. Please refresh.';
+                    $('checkReportBtn').innerText = '🔍 View Report Card';
+                    $('checkReportBtn').disabled = false;
+                    return;
+                }
+
+                const pinDoc = await db.collection('pins').doc(pin).get();
+                if (!pinDoc.exists) {
+                    err.innerText = '❌ Invalid PIN. Please check and try again.';
+                    $('checkReportBtn').innerText = '🔍 View Report Card';
+                    $('checkReportBtn').disabled = false;
+                    return;
+                }
+
+                const pinData = pinDoc.data();
+
+                if (pinData.used && pinData.usedBy !== name) {
+                    err.innerText =
+                        '❌ This PIN has already been used by another student. Each PIN is valid for one student only.';
+                    $('checkReportBtn').innerText = '🔍 View Report Card';
+                    $('checkReportBtn').disabled = false;
+                    return;
+                }
+
+                const snap = await db.collection('reportCards')
+                    .where('class', '==', cls)
+                    .where('studentName', '==', name)
+                    .where('approved', '==', true)
+                    .get();
+
+                if (snap.empty) {
+                    err.innerText = '❌ No approved report card found for this student in this class.';
+                    $('checkReportBtn').innerText = '🔍 View Report Card';
+                    $('checkReportBtn').disabled = false;
+                    return;
+                }
+
+                const doc = snap.docs[0];
+                const data = doc.data();
+
+                if (!pinData.used) {
+                    await db.collection('pins').doc(pin).update({
+                        used: true,
+                        usedBy: name,
+                        class: cls,
+                        usedAt: new Date()
+                    });
+                    await db.collection('reportCards').doc(doc.id).update({ pin: pin });
+                    showToast(`✅ PIN claimed successfully for ${name}!`, 'success');
+                } else {
+                    showToast(`ℹ️ Welcome back, ${name}!`, 'success');
+                }
+
+                // Fetch School Settings
+                let schoolName = 'JUDAH WONDERS MODEL SCHOOL';
+                let schoolMotto = 'Technology & Academy with a Difference';
+                let schoolLocation = 'Abiola Way, Abeokuta, Ogun State.';
+                let logoUrl = 'https://raw.githubusercontent.com/your-repo/JudahWondersLogo.png';
+                try {
+                    const settingsSnap = await db.collection('settings').doc('schoolInfo').get();
+                    if (settingsSnap.exists) {
+                        const s = settingsSnap.data();
+                        schoolName = s.schoolName || schoolName;
+                        schoolMotto = s.motto || schoolMotto;
+                        schoolLocation = s.location || schoolLocation;
+                        logoUrl = s.logoUrl || logoUrl;
+                    }
+                } catch (e) { /* ignore */ }
+
+                // Render the Report Card
+                renderReportCard(data, { name: schoolName, motto: schoolMotto, location: schoolLocation, logoUrl });
+
+                showPage('report');
+                err.innerText = '';
+
+            } catch (e) {
+                err.innerText = '⚠️ Network error. Please check your connection.';
+                console.error(e);
+                showToast('❌ Error loading report.', 'error');
+            }
+
+            $('checkReportBtn').innerText = '🔍 View Report Card';
+            $('checkReportBtn').disabled = false;
+        });
+
+        // =============================================================
+        // 4. RENDER REPORT CARD (A4 with ALL New Fields + Position)
+        // =============================================================
+        function renderReportCard(data, school) {
+            const container = $('reportContainer');
+            const subjects = Object.keys(data.subjects || {});
+            const att = data.attendance || { open: 90, present: 85, absent: 5 };
+            const qualities = data.qualities || {};
+            const extracurriculars = data.extracurriculars || [];
+            const commentary = data.commentary || 'No additional comments provided.';
+
+            const formatDate = (str) => {
+                if (!str) return 'Not set';
+                const d = new Date(str);
+                if (isNaN(d.getTime())) return str;
+                return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+            };
+
+            // Calculate per-student averages for position
+            // We need to compute each student's overall average from the data
+            // But since we only have one student here, we compute it and store.
+            // For position, we need to compare with other students, but that requires a separate query.
+            // We'll compute the overall average and display position as "1st" if it's the only one,
+            // or we can fetch all students in the class to compute position.
+
+            // For now, we'll compute the average and display it.
+            // Position will be computed by fetching all students in the class.
+            // We'll do that async.
+
+            // First, build the subject rows
+            let grandTotal = 0;
+            let totalSubjects = 0;
+            let subjectRows = '';
+            let allAverages = {};
+
+            subjects.forEach((sub, index) => {
+                const s = data.subjects[sub] || {};
+                const first = s.firstTerm || 0;
+                const second = s.secondTerm || 0;
+                const ca = s.thirdCA || 0;
+                const exam = s.thirdExam || 0;
+                const thirdTotal = ca + exam;
+                const cumTotal = first + second + thirdTotal;
+                const avg = cumTotal > 0 ? cumTotal / 3 : 0;
+
+                grandTotal += cumTotal;
+                totalSubjects++;
+
+                let grade, remark, gradeClass;
+                if (avg >= 70) { grade = 'A';
+                    remark = 'Excellent';
+                    gradeClass = 'grade-a'; } else if (avg >= 60) { grade = 'B';
+                    remark = 'Good';
+                    gradeClass = 'grade-b'; } else if (avg >= 50) { grade = 'C';
+                    remark = 'Satisfactory';
+                    gradeClass = 'grade-c'; } else if (avg >= 40) { grade = 'D';
+                    remark = 'Pass';
+                    gradeClass = 'grade-d'; } else { grade = 'F';
+                    remark = 'Needs Improvement';
+                    gradeClass = 'grade-f'; }
+
+                subjectRows += `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${sub}</td>
+                            <td>${first}</td>
+                            <td>${second}</td>
+                            <td>${ca}</td>
+                            <td>${exam}</td>
+                            <td><strong>${thirdTotal}</strong></td>
+                            <td><strong>${cumTotal}</strong></td>
+                            <td>${avg > 0 ? avg.toFixed(1) + '%' : '--'}</td>
+                            <td class="${gradeClass}">${grade}</td>
+                            <td style="font-size:11px;">${remark}</td>
+                        </tr>
+                    `;
+            });
+
+            const overallAvg = totalSubjects > 0 ? (grandTotal / totalSubjects) : 0;
+            let overallGrade, overallRemark, overallGradeClass;
+            if (overallAvg >= 70) { overallGrade = 'A';
+                overallRemark = 'Excellent';
+                overallGradeClass = 'grade-a'; } else if (overallAvg >= 60) { overallGrade = 'B';
+                overallRemark = 'Good';
+                overallGradeClass = 'grade-b'; } else if (overallAvg >= 50) { overallGrade = 'C';
+                overallRemark = 'Satisfactory';
+                overallGradeClass = 'grade-c'; } else if (overallAvg >= 40) { overallGrade = 'D';
+                overallRemark = 'Pass';
+                overallGradeClass = 'grade-d'; } else { overallGrade = 'F';
+                overallRemark = 'Needs Improvement';
+                overallGradeClass = 'grade-f'; }
+
+            // Compute position by fetching all students in the class
+            // We'll do this async and update the DOM
+            async function computePositionAndRender() {
+                try {
+                    const snap = await db.collection('reportCards')
+                        .where('class', '==', data.class)
+                        .where('approved', '==', true)
+                        .get();
+
+                    let students = [];
+                    snap.forEach(doc => {
+                        const d = doc.data();
+                        let total = 0;
+                        let count = 0;
+                        const subs = Object.keys(d.subjects || {});
+                        subs.forEach(sub => {
+                            const s = d.subjects[sub] || {};
+                            const first = s.firstTerm || 0;
+                            const second = s.secondTerm || 0;
+                            const ca = s.thirdCA || 0;
+                            const exam = s.thirdExam || 0;
+                            const cumTotal = first + second + ca + exam;
+                            total += cumTotal;
+                            count++;
+                        });
+                        const avg = count > 0 ? total / count : 0;
+                        students.push({ name: d.studentName, avg });
+                    });
+
+                    // Sort by average descending
+                    students.sort((a, b) => b.avg - a.avg);
+                    let position = '--';
+                    for (let i = 0; i < students.length; i++) {
+                        if (students[i].name === data.studentName) {
+                            const pos = i + 1;
+                            if (pos === 1) position = '1st';
+                            else if (pos === 2) position = '2nd';
+                            else if (pos === 3) position = '3rd';
+                            else position = pos + 'th';
+                            break;
+                        }
+                    }
+
+                    // Update the position row
+                    const posRow = document.querySelector('.position-row');
+                    if (posRow) {
+                        const cells = posRow.querySelectorAll('td');
+                        if (cells.length >= 11) {
+                            // Position is in the 10th column (index 9) - we'll put it in a merged cell
+                            // Actually we want to show position prominently
+                            // Let's update the row to show position
+                            posRow.innerHTML = `
+                                <td colspan="8" style="text-align:right; padding-right:20px;">🏆 POSITION</td>
+                                <td colspan="3" style="text-align:center; font-size:20px; color:#b8860b;">${position}</td>
+                            `;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error computing position:', e);
+                }
+            }
+
+            // Build Qualities HTML
+            let qualitiesHtml = '';
+            const qualityNames = Object.keys(qualities);
+            if (qualityNames.length > 0) {
+                qualityNames.forEach(q => {
+                    qualitiesHtml += `
+                            <div class="item">
+                                <span>${q}</span>
+                                <span class="rating">${qualities[q]} / 5</span>
+                            </div>
+                        `;
+                });
+            } else {
+                qualitiesHtml = '<p style="font-size:13px; color:#94a3b8;">No qualities recorded.</p>';
+            }
+
+            // Build Extracurriculars HTML
+            let extrasHtml = '';
+            const allExtras = ['Sports', 'Music', 'Drama', 'Debate', 'Art', 'Chess', 'Scouting', 'Agriculture'];
+            if (extracurriculars.length > 0) {
+                extrasHtml = allExtras.map(e => {
+                    const done = extracurriculars.includes(e);
+                    return `<span class="badge ${done ? '' : 'missing'}">${done ? '✅' : '⬜'} ${e}</span>`;
+                }).join(' ');
+            } else {
+                extrasHtml = '<p style="font-size:13px; color:#94a3b8;">No extracurriculars recorded.</p>';
+            }
+
+            // Build Full HTML
+            const html = `
+                    <!-- WATERMARK CONTAINER (visible only in print) -->
+                    <div class="watermark-container">
+                        <div class="wm-text">JWMS</div>
+                        <img src="${school.logoUrl || 'https://raw.githubusercontent.com/your-repo/JudahWondersLogo.png'}" 
+                             alt="School Logo" class="wm-logo" 
+                             onerror="this.style.display='none'" />
+                    </div>
+
+                    <!-- REPORT HEADER with Logo Top Right -->
+                    <div class="report-header">
+                        <div class="left">
+                            <div class="school-name">🏫 ${data.schoolName || school.name}</div>
+                            <div class="motto">✝️ ${school.motto}</div>
+                            <div class="location">📍 ${school.location}</div>
+                            <div class="term-info">${data.term || 'THIRD TERM'} REPORT — ${data.year || new Date().getFullYear()}</div>
+                        </div>
+                        <div class="logo-right">
+                            <img src="${school.logoUrl || 'https://raw.githubusercontent.com/your-repo/JudahWondersLogo.png'}" 
+                                 alt="School Logo" 
+                                 onerror="this.style.display='none'" />
+                            <div class="watermark-text">JWMS</div>
+                        </div>
+                    </div>
+
+                    <!-- STUDENT & TEACHER INFO -->
+                    <div class="student-meta">
+                        <div class="name">👤 <span>${data.studentName}</span></div>
+                        <div class="class">📚 Class: <strong>${data.class}</strong></div>
+                        <div class="teacher">👨‍🏫 Class Teacher: <strong>${data.teacherName || 'Not specified'}</strong></div>
+                        <div style="font-size:13px; color:#64748b;">📅 Date: ${formatDate(data.date)}</div>
+                    </div>
+
+                    <!-- ATTENDANCE & SCHOOL DATES -->
+                    <div class="attendance-grid" style="margin-bottom:10px; padding:8px 16px; background:#f8fafc; border-radius:12px; border:1px solid #e2e8f0;">
+                        <span>📅 Open: ${att.open}</span>
+                        <span>✅ Present: ${att.present}</span>
+                        <span>❌ Absent: ${att.absent}</span>
+                        <span>📊 Att: ${((att.present/att.open)*100).toFixed(1)}%</span>
+                    </div>
+
+                    <div class="dates-row">
+                        <span>📅 Resumption: <strong>${formatDate(data.resumptionDate)}</strong></span>
+                        <span>📅 Closing: <strong>${formatDate(data.closingDate)}</strong></span>
+                        <span>📅 Next Term: <strong>${formatDate(data.nextTermResumption)}</strong></span>
+                    </div>
+
+                    <!-- QUALITIES & EXTRACURRICULARS -->
+                    <div class="info-grid">
+                        <div class="box">
+                            <h4>⭐ Qualities & Character</h4>
+                            ${qualitiesHtml}
+                        </div>
+                        <div class="box">
+                            <h4>⚽ Extracurricular Activities</h4>
+                            <div class="extra-badges">${extrasHtml}</div>
+                        </div>
+                    </div>
+
+                    <!-- SUBJECT TABLE -->
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">S/N</th>
+                                    <th rowspan="2">SUBJECT</th>
+                                    <th rowspan="2">1ST TERM</th>
+                                    <th rowspan="2">2ND TERM</th>
+                                    <th colspan="3">3RD TERM</th>
+                                    <th rowspan="2">CUMULATIVE<br>TOTAL</th>
+                                    <th rowspan="2">AVG %</th>
+                                    <th rowspan="2">GRADE</th>
+                                    <th rowspan="2">REMARK</th>
+                                </tr>
+                                <tr class="sub-header">
+                                    <th>C.A</th>
+                                    <th>EXAM</th>
+                                    <th>TOTAL</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${subjectRows}
+                                <tr class="grand-total-row">
+                                    <td colspan="7"><strong>📊 GRAND TOTAL / AVERAGE</strong></td>
+                                    <td><strong>${grandTotal}</strong></td>
+                                    <td><strong>${overallAvg > 0 ? overallAvg.toFixed(1) + '%' : '--'}</strong></td>
+                                    <td class="${overallGradeClass}"><strong>${overallGrade}</strong></td>
+                                    <td style="font-size:12px;"><strong>${overallRemark}</strong></td>
+                                </tr>
+                                <tr class="position-row">
+                                    <td colspan="8" style="text-align:right; padding-right:20px;">🏆 POSITION</td>
+                                    <td colspan="3" style="text-align:center; font-size:20px; color:#b8860b;">--</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- TEACHER'S COMMENTARY -->
+                    <div class="commentary-box">
+                        <h4>📝 Teacher's Commentary</h4>
+                        <p>${commentary}</p>
+                    </div>
+
+                    <!-- SIGNATURES -->
+                    <div class="signature-section">
+                        <div class="signature-box">
+                            <div class="label">Class Teacher</div>
+                            <div class="line"></div>
+                            <div class="sub">Name & Signature</div>
+                        </div>
+                        <div class="signature-box text-right">
+                            <div class="label">Principal</div>
+                            <div class="line"></div>
+                            <div class="sub">Name & Signature</div>
+                        </div>
+                        <div class="signature-box text-right">
+                            <div class="label">Parent/Guardian</div>
+                            <div class="line"></div>
+                            <div class="sub">Name & Signature</div>
+                        </div>
+                    </div>
+
+                    <!-- FOOTER -->
+                    <div class="report-footer">
+                        🔐 Verified & Approved | PIN: ${data.pin || 'Claimed'} | Generated by Judah Wonders Model School System
+                    </div>
+                `;
+
+            container.innerHTML = html;
+
+            // Compute position after rendering
+            computePositionAndRender();
+        }
+
+        // =============================================================
+        // 5. BACK BUTTON
+        // =============================================================
+        $('backBtn').addEventListener('click', () => {
+            showPage('login');
+            $('reportContainer').innerHTML = '';
+            $('studentName').value = '';
+            $('classSelect').value = '';
+            $('studentPin').value = '';
+            $('reportErr').innerText = '';
+        });
+
+        // =============================================================
+        // 6. INIT
+        // =============================================================
+        showPage('login');
+        loadMasterClassList();
+        console.log('✅ JUDAH WONDERS MODEL SCHOOL — Report Card Viewer with Watermark, Logo & Position is ready!');
+    </script>
+</body>
+</html>
