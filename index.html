@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JUDAH WONDERS MODEL SCHOOL</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f8fafc;
+      overflow-x: hidden;
+    }
+
+    /* HERO – warm, royal, tech-infused gradient */
+    .hero {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #fef9e7 0%, #e8e0f0 40%, #d4e2f7 80%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* animated orbs – gold & purple */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.25;
+      animation: floatOrb 10s ease-in-out infinite alternate;
+      z-index: 0;
+    }
+    .orb-1 {
+      width: 550px;
+      height: 550px;
+      background: #b8860b;
+      top: -180px;
+      left: -180px;
+      animation-delay: 0s;
+    }
+    .orb-2 {
+      width: 600px;
+      height: 600px;
+      background: #5b2d8e;
+      bottom: -200px;
+      right: -200px;
+      animation-delay: 2.5s;
+    }
+    .orb-3 {
+      width: 350px;
+      height: 350px;
+      background: #e6b800;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation-delay: 4s;
+      opacity: 0.12;
+    }
+
+    @keyframes floatOrb {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(35px, -25px) scale(1.08); }
+    }
+
+    .hero-content {
+      max-width: 1200px;
+      width: 100%;
+      z-index: 1;
+      text-align: center;
+    }
+
+    /* brand badge */
+    .school-badge {
+      display: inline-block;
+      background: rgba(255, 215, 0, 0.2);
+      backdrop-filter: blur(4px);
+      padding: 8px 32px;
+      border-radius: 60px;
+      font-weight: 800;
+      color: #7a4b0e;
+      font-size: 14px;
+      letter-spacing: 2px;
+      border: 1px solid rgba(255, 215, 0, 0.5);
+      margin-bottom: 16px;
+    }
+
+    /* school name – gold to purple gradient */
+    .school-name {
+      font-size: clamp(2.6rem, 10vw, 5rem);
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 6px;
+      background: linear-gradient(to right, #b8860b, #8a2be2, #4b0082);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+    }
+
+    .school-motto {
+      font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+      font-weight: 700;
+      color: #1e293b;
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(4px);
+      display: inline-block;
+      padding: 8px 32px;
+      border-radius: 60px;
+      margin-bottom: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.7);
+    }
+
+    .school-location {
+      font-size: 1rem;
+      color: #475569;
+      font-weight: 600;
+      margin-bottom: 28px;
+    }
+
+    /* glass carousel */
+    .carousel-container {
+      max-width: 780px;
+      margin: 20px auto 35px auto;
+      padding: 30px 28px;
+      border-radius: 40px;
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 215, 0, 0.25);
+      box-shadow: 0 20px 45px rgba(91, 45, 142, 0.08);
+      min-height: 155px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .slide {
+      display: none;
+      animation: fadeSlide 0.7s ease forwards;
+      text-align: center;
+      width: 100%;
+    }
+    .slide.active { display: block; }
+
+    @keyframes fadeSlide {
+      0% { opacity: 0; transform: translateY(16px) scale(0.97); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .slide .icon { font-size: 2.8rem; margin-bottom: 4px; display: block; }
+    .slide .text {
+      font-size: clamp(1.2rem, 2.8vw, 1.8rem);
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.4;
+    }
+    .slide .text.quote { font-style: italic; color: #1e293b; }
+    .slide .reference {
+      font-weight: 700;
+      color: #8a2be2;
+      font-size: clamp(0.9rem, 1.4vw, 1.1rem);
+      margin-top: 8px;
+      display: block;
+    }
+
+    /* dots */
+    .carousel-dots {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .carousel-dots span {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 60px;
+      background: #cbd5e1;
+      transition: 0.3s;
+      cursor: pointer;
+    }
+    .carousel-dots span.active {
+      background: #b8860b;
+      width: 32px;
+    }
+
+    /* portal section */
+    .portal-section {
+      margin-top: 20px;
+      width: 100%;
+      max-width: 1100px;
+    }
+    .portal-section h2 {
+      font-size: clamp(1.6rem, 3vw, 2.5rem);
+      font-weight: 800;
+      color: #1e1b4b;
+      margin-bottom: 25px;
+      letter-spacing: -0.5px;
+    }
+    .portal-section h2 span {
+      background: linear-gradient(to right, #b8860b, #8a2be2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .portal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 22px;
+    }
+
+    .portal-card {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 215, 0, 0.25);
+      border-radius: 28px;
+      padding: 30px 20px 25px;
+      text-align: center;
+      text-decoration: none;
+      color: #0f172a;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .portal-card:hover {
+      transform: translateY(-12px) scale(1.02);
+      background: white;
+      box-shadow: 0 25px 50px -12px rgba(138, 43, 226, 0.25);
+      border-color: #b8860b;
+    }
+    .portal-card .card-icon { font-size: 3.2rem; margin-bottom: 2px; }
+    .portal-card .card-title {
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: #1e1b4b;
+    }
+    .portal-card .card-desc {
+      font-size: 0.9rem;
+      color: #64748b;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    .portal-card .card-arrow {
+      margin-top: 6px;
+      font-size: 1.4rem;
+      color: #8a2be2;
+      transition: 0.2s;
+    }
+    .portal-card:hover .card-arrow { transform: translateX(6px); }
+
+    /* card accents – using school colors */
+    .portal-card.student { border-top: 4px solid #b8860b; }
+    .portal-card.teacher { border-top: 4px solid #8a2be2; }
+    .portal-card.admin { border-top: 4px solid #e6b800; }
+    .portal-card.parent { border-top: 4px solid #4b0082; }
+
+    /* footer */
+    .footer {
+      margin-top: 60px;
+      padding-top: 25px;
+      border-top: 2px dashed rgba(184, 134, 11, 0.25);
+      width: 100%;
+      text-align: center;
+      color: #475569;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .footer span { color: #8a2be2; }
+
+    /* responsive */
+    @media (max-width: 600px) {
+      .hero { padding: 30px 15px; }
+      .carousel-container { padding: 20px 18px; min-height: 140px; }
+      .portal-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+      .portal-card { padding: 20px 12px 18px; }
+      .portal-card .card-icon { font-size: 2.4rem; }
+    }
+    @media (max-width: 420px) {
+      .portal-grid { grid-template-columns: 1fr; }
+    }
+
+    /* logo placeholder – using GitHub image */
+    .logo-wrapper {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+    .logo-wrapper img {
+      max-height: 80px;
+      width: auto;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+      transition: transform 0.3s ease;
+      background: rgba(255,255,255,0.3);
+      padding: 6px 14px;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,215,0,0.2);
+    }
+    .logo-wrapper img:hover {
+      transform: scale(1.03);
+    }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+
+  <!-- orbs -->
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="hero-content">
+
+    <!-- logo from GitHub repo (replace with your actual raw URL if needed) -->
+    <div class="logo-wrapper">
+      <img src="https://raw.githubusercontent.com/your-repo/JudahWondersLogo.png" 
+           alt="JUDAH WONDERS MODEL SCHOOL logo" 
+           onerror="this.style.display='none'" />
+    </div>
+
+    <!-- branding -->
+    <div class="school-badge">✝️ EST. 2026</div>
+    <h1 class="school-name">JUDAH WONDERS MODEL</h1>
+    <div class="school-motto">Technology &amp; Academy with a Difference</div>
+    <div class="school-location">📍 Abiola Way, Abeokuta, Ogun State.</div>
+
+    <!-- ===== CAROUSEL ===== -->
+    <div class="carousel-container" id="carousel">
+
+      <!-- 1 -->
+      <div class="slide active" data-index="0">
+        <span class="icon">📖</span>
+        <div class="text">"The fear of the LORD is the beginning of knowledge."</div>
+        <span class="reference">— Proverbs 1:7</span>
+      </div>
+      <!-- 2 -->
+      <div class="slide" data-index="1">
+        <span class="icon">💡</span>
+        <div class="text quote">"Technology is best when it brings people together."</div>
+        <span class="reference">— Matt Mullenweg</span>
+      </div>
+      <!-- 3 -->
+      <div class="slide" data-index="2">
+        <span class="icon">🌱</span>
+        <div class="text">"Get wisdom, get understanding; do not forget my words."</div>
+        <span class="reference">— Proverbs 4:5</span>
+      </div>
+      <!-- 4 -->
+      <div class="slide" data-index="3">
+        <span class="icon">🧠</span>
+        <div class="text quote">"Education is the most powerful weapon which you can use to change the world."</div>
+        <span class="reference">— Nelson Mandela</span>
+      </div>
+      <!-- 5 -->
+      <div class="slide" data-index="4">
+        <span class="icon">🕊️</span>
+        <div class="text">"For I know the plans I have for you, plans to prosper you."</div>
+        <span class="reference">— Jeremiah 29:11</span>
+      </div>
+      <!-- 6 -->
+      <div class="slide" data-index="5">
+        <span class="icon">📚</span>
+        <div class="text quote">"Learning is a treasure that will follow its owner everywhere."</div>
+        <span class="reference">— Chinese Proverb</span>
+      </div>
+      <!-- 7 -->
+      <div class="slide" data-index="6">
+        <span class="icon">🏹</span>
+        <div class="text">"Train up a child in the way he should go, and when he is old he will not depart from it."</div>
+        <span class="reference">— Proverbs 22:6</span>
+      </div>
+      <!-- 8 -->
+      <div class="slide" data-index="7">
+        <span class="icon">⚡</span>
+        <div class="text">"Commit your work to the Lord, and your plans will be established."</div>
+        <span class="reference">— Proverbs 16:3</span>
+      </div>
+      <!-- 9 -->
+      <div class="slide" data-index="8">
+        <span class="icon">🔍</span>
+        <div class="text">"The heart of the discerning acquires knowledge."</div>
+        <span class="reference">— Proverbs 18:15</span>
+      </div>
+      <!-- 10 -->
+      <div class="slide" data-index="9">
+        <span class="icon">🔥</span>
+        <div class="text quote">"Education is the kindling of a flame, not the filling of a vessel."</div>
+        <span class="reference">— Socrates</span>
+      </div>
+      <!-- 11 -->
+      <div class="slide" data-index="10">
+        <span class="icon">🎁</span>
+        <div class="text quote">"The beautiful thing about learning is that nobody can take it away from you."</div>
+        <span class="reference">— B.B. King</span>
+      </div>
+      <!-- 12 -->
+      <div class="slide" data-index="11">
+        <span class="icon">🌟</span>
+        <div class="text">"For the Lord gives wisdom; from his mouth come knowledge and understanding."</div>
+        <span class="reference">— Proverbs 2:6</span>
+      </div>
+    </div>
+
+    <!-- dots -->
+    <div class="carousel-dots" id="dotsContainer"></div>
+
+    <!-- ===== PORTAL GRID ===== -->
+    <div class="portal-section">
+      <h2>🚪 Choose Your <span>Portal</span></h2>
+      <div class="portal-grid">
+
+        <a href="exam.html" class="portal-card student">
+          <div class="card-icon">🎓</div>
+          <div class="card-title">Student Exam</div>
+          <div class="card-desc">Computer-Based Test (CBT)</div>
+          <div class="card-arrow">→</div>
+        </a>
+
+        <a href="teacher.html" class="portal-card teacher">
+          <div class="card-icon">👨‍🏫</div>
+          <div class="card-title">Teacher Dashboard</div>
+          <div class="card-desc">Subjects, questions &amp; report cards</div>
+          <div class="card-arrow">→</div>
+        </a>
+
+        <a href="admin.html" class="portal-card admin">
+          <div class="card-icon">🔑</div>
+          <div class="card-title">Admin Console</div>
+          <div class="card-desc">Approve reports &amp; generate PINs</div>
+          <div class="card-arrow">→</div>
+        </a>
+
+        <a href="report.html" class="portal-card parent">
+          <div class="card-icon">👪</div>
+          <div class="card-title">Check Results</div>
+          <div class="card-desc">View report card with name + PIN</div>
+          <div class="card-arrow">→</div>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- footer -->
+    <div class="footer">
+      © 2026 <span>JUDAH WONDERS MODEL SCHOOL</span> — Technology &amp; Academy with a Difference. Built with Faith &amp; Excellence.
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ===== CAROUSEL =====
+  const slides = document.querySelectorAll('.slide');
+  const dotsContainer = document.getElementById('dotsContainer');
+  let currentIndex = 0;
+  let interval;
+
+  // create dots
+  slides.forEach((_, i) => {
+    const dot = document.createElement('span');
+    if (i === 0) dot.classList.add('active');
+    dot.dataset.index = i;
+    dot.addEventListener('click', () => goToSlide(i));
+    dotsContainer.appendChild(dot);
+  });
+
+  const dots = document.querySelectorAll('.carousel-dots span');
+
+  function goToSlide(index) {
+    slides.forEach(s => s.classList.remove('active'));
+    dots.forEach(d => d.classList.remove('active'));
+    slides[index].classList.add('active');
+    dots[index].classList.add('active');
+    currentIndex = index;
+  }
+
+  function nextSlide() {
+    const next = (currentIndex + 1) % slides.length;
+    goToSlide(next);
+  }
+
+  function startCarousel() {
+    if (interval) clearInterval(interval);
+    interval = setInterval(nextSlide, 6000);
+  }
+
+  const carouselEl = document.getElementById('carousel');
+  carouselEl.addEventListener('mouseenter', () => clearInterval(interval));
+  carouselEl.addEventListener('mouseleave', startCarousel);
+
+  goToSlide(0);
+  startCarousel();
+
+  console.log('🦁 JUDAH WONDERS MODEL SCHOOL — Technology & Academy with a Difference.');
+</script>
+
+</body>
+</html>
